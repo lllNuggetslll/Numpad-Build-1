@@ -11,13 +11,13 @@ It's based on ceoloide's "not about money" ergogen design. The PCB is generated 
 [ergogen](https://ergogen.xyz), routed with freerouting, and checked in KiCad 8. The case is generated
 from the board itself, so the two always match.
 
-![PCB top](output/numpad/gerber_render_top.png)
+![PCB top](kicad/gerber_render_top.png)
 
 ## Status
 
 | Piece | State |
 |---|---|
-| PCB | Routed and DRC-clean. Gerbers are ready in `output/numpad/fab/numpad-gerbers.zip`. |
+| PCB | Routed and DRC-clean. Gerbers are ready in `kicad/fab/numpad-gerbers.zip` (a PCBWay-ready package is `kicad/numpad.kicad_pcb.zip`). |
 | Case and plate | `case/case_bottom.stl`, `case/case_plate.stl` |
 | Firmware | Not written yet. ZMK needs a board definition using the pin map below. |
 
@@ -36,7 +36,7 @@ See **[SHOPPING_LIST.md](SHOPPING_LIST.md)**.
 | `footprints/ceoloide/` | Upstream ceoloide footprints. |
 | `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED and resistor. |
 | `output/` | **Current board.** `pcbs/not_about_money.kicad_pcb` is routed (DRC report `pcbs/drc.rpt`, preview `routed.svg`); `not_about_money.unrouted.kicad_pcb` is the raw ergogen output. |
-| `output/numpad/` | KiCad project holding the current board, plus `fab/` (gerbers + drill + zip). |
+| `kicad/` | KiCad project for the current board (with the project's 0.2 mm edge-clearance rule), `fab/` (gerbers + drill + zip), and the PCBWay package `numpad.kicad_pcb.zip`. |
 | `case/build_case.py` | Generates the case from the board: `case_bottom.jscad`, `case_plate.jscad`, `assembly.json`. |
 | `case/viewer.html` | 3D viewer of the case, plate, PCB, parts, keycaps and battery. |
 | `case/battery_fit.py` | Finds where LiPo cells fit under the tilted PCB. |
@@ -45,7 +45,7 @@ See **[SHOPPING_LIST.md](SHOPPING_LIST.md)**.
 
 ## 1. Order the PCB
 
-Upload `output/numpad/fab/numpad-gerbers.zip` to any PCB fab. Order a 2-layer, 1.6 mm, standard-spec board. The
+Upload `kicad/fab/numpad-gerbers.zip` to any PCB fab. For PCBWay, `kicad/numpad.kicad_pcb.zip` already includes their BOM, netlist and positions files. Order a 2-layer, 1.6 mm, standard-spec board. The
 design values (0.25 mm tracks, 0.2 mm clearance, 0.6/0.3 mm vias) are within every fab's limits. The three
 stabilizer cutouts are part of the board outline.
 

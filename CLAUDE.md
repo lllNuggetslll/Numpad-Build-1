@@ -93,13 +93,14 @@ Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-arc
   - **Never run `ergogen -o output --clean`**: it empties the folder, wiping the routing (and anything else
     in `output/`). Generate into a scratch dir and copy `pcbs/ outlines/ cases/` over.
   - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb`.
-- `output/numpad/`: the user's KiCad project. It holds a copy of the routed board (DRC clean under the
-  project's own rules, edge clearance 0.2).
-  - `fab/` holds the **current** gerbers + drill + `numpad-gerbers.zip` (exported 2026-10-01 23:16).
-  - Still contains old leftovers from earlier eras (`numpad.kicad_pcb.choc-backup`, `.prefix.bak`,
-    `*.pre-stabfix`, `fab-stale-2026-10-01/`, `numpad/` subfolder).
-  - **Pending:** move it to a top-level `kicad/` folder and prune those leftovers. It was left in place
-    because KiCad had the project open. The user must close KiCad first.
+- `kicad/`: the user's KiCad project (moved from `output/numpad/` on 2026-10-02, so ergogen can't wipe it).
+  - `numpad.kicad_pcb` is a copy of the routed board. DRC is clean under the project's own rules (edge
+    clearance 0.2): 0 violations, 0 unconnected.
+  - `fab/` holds the **current** gerbers + drill + `numpad-gerbers.zip`.
+  - `numpad.kicad_pcb.zip` is a **PCBWay order package** (gerbers, drill, PCBWay BOM/netlist/positions),
+    exported from the current board 2026-10-01 23:37, likely with PCBWay's KiCad plugin.
+  - Old choc/backup leftovers were pruned (in git history at `c19e498`/`70bfd2c`; untracked KiCad backup
+    zips are in `../numpad-archive/`).
 - `case/`: case build (`build_case.py`, generated jscad/STL, `viewer.html`, `battery_fit.py`, `board.html` +
   `board.svg`).
 - `README.md` (build + assembly instructions), `SHOPPING_LIST.md` (BOM).
@@ -262,7 +263,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 
 ## Open items
 
-- If the board changes again, re-route it, copy it into `output/numpad/numpad.kicad_pcb` and re-export `fab/`.
+- If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and re-export `kicad/fab/` (and the PCBWay zip).
 
 - Before committing to the plate, test-print one stab cutout: the notch depth and neck size are estimates.
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering

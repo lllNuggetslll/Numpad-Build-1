@@ -7,7 +7,7 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 
 | Qty | Part | Exact part / spec | Notes |
 |---|---|---|---|
-| 1 | PCB | 2-layer, 1.6 mm FR-4, from `output/numpad/fab/numpad-gerbers.zip` | Any fab (JLCPCB, PCBWay, …). The 3 stabilizer cutouts are in the board outline, so no extra milling is needed. |
+| 1 | PCB | 2-layer, 1.6 mm FR-4, from `kicad/fab/numpad-gerbers.zip` | Any fab (JLCPCB, PCBWay, …). The 3 stabilizer cutouts are in the board outline, so no extra milling is needed. |
 | 1 | Controller | **nice!nano v2** | Wireless nRF52840 (ZMK). |
 | 16 | Header pins | 2.54 mm single-row male headers with standard **2.5 mm** plastic | Only 16 of the 24 positions are used (see the README). Buy a 1×40 strip. |
 | 21 | Hotswap sockets | **Gateron Low Profile Hot-swap 2.0, KS-2P02B01-02** | Must be the **low-profile** version (-02). The regular -01 socket doesn't fit. Sold in packs of 70/110. |
