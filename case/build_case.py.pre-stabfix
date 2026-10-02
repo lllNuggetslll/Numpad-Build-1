@@ -1,0 +1,423 @@
+# Generates the case from the board (single source of truth for the stack-up):
+#   case_bottom.jscad  tilted tray: flat floor, PCB parallel to the sloped top edge,
+#                      screw pillars + corner support ledges cut to the PCB underside,
+#                      rear-wall windows for USB-C / reset / power.
+#   case_plate.jscad   switch plate (board frame, plate top up), inset inside the tray walls,
+#                      with Gateron LP stabilizer cutouts, spacer bosses and an edge rim underneath.
+#   assembly.json      PCB + part boxes for viewer.html and the collision report below.
+# Run with KiCad's python:  "C:/Program Files/KiCad/8.0/bin/python.exe" build_case.py
+# then render each .jscad with @jscad/cli@1 (see CLAUDE.md).
+#
+# Frames: "board frame" = ergogen xy (x = kicad_x, y = -kicad_y), z = 0 at the PCB underside,
+# PCB flat. "world" = case frame, z = 0 under the floor. World = board frame rotated about the
+# x axis by TILT_DEG around the PCB's rear edge (y = Y_PIVOT), then lifted by Z_REAR.
+import json, math, os, pcbnew
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+BOARD = os.path.join(HERE, "..", "output_led", "pcbs", "not_about_money.kicad_pcb")
+
+# ---- case ----
+FLOOR_T = 1.0
+TILT_DEG = 2.37            # rear higher
+FLOOR_CLEAR = 0.5          # min gap between the lowest part and the floor
+WALL_T = 1.2
+PCB_TOL = 0.25             # PCB edge to wall, per side
+POST_R, SCREW_R = 3.0, 1.1
+# M2 countersunk (bevel-head) screws go in from the top: countersink in the plate, clearance through
+# the plate boss and PCB, then self-tap into a blind pilot in the pillar. Every hole runs square to the
+# tilted board, so the head sits flush in the plate, and nothing shows under the case.
+CSK_R = 2.0                # countersink top radius (M2 DIN 965 head dk 3.8), 90 deg
+PILOT_R = 0.8              # self-tapping M2 pilot in the pillar
+PILOT_EXTRA = 0.5          # pilot runs this much past the screw tip
+FLOOR_KEEP = 0.8           # solid plastic left under the pilot (world z)
+MIN_THREAD = 1.5
+SCREW_LENGTHS = [4, 5, 6, 8, 10, 12]   # countersunk length includes the head
+LEDGE_W, LEDGE_ARM = 1.6, 10.0   # corner support ledges: width in from the wall, arm length
+GAP = 0.4                  # wiggle room around each wall cutout, per side
+PITCH = 19.0
+KEYCAP = 18.0              # 1u keycap; 2u = 2 * PITCH - 1
+
+# ---- plate ----
+PCB_T = 1.6
+PLATE_T = 1.2              # Gateron LP stabilizers are specced for a 1.2 plate
+PLATE_TOP = PCB_T + 2.2    # plate top above the PCB underside (Gateron LP: 2.2 above PCB top)
+PLATE_TOL = 0.2            # plate edge to tray wall, per side
+SW_CUT = 14.0              # switch cutout
+PIN_RELIEF = 0.5           # clearance around THT pins poking up through the PCB
+PLATE_SKIN = 0.6           # pin reliefs are blind pockets from below; this much plate stays on top
+SPACER_R = 2.15            # spacer bosses around the screw holes (M2 spacer size)
+RIM_W = 1.2                # support rim along the plate edge, underneath
+# Gateron LP plate-mount stabilizer KS-57B210T: housings 24.00 apart, plate cutout 6.00 x 12.50
+# with a 1.70 notch, joined to the switch hole by a neck (Gateron "suggested mounting" drawing).
+STAB_DX, STAB_W, STAB_H = 12.0, 6.0, 12.5
+STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H = 1.7, 1.0, 2.0
+STAB_BODY = (6.0, 12.4, 4.45)  # housing body below the plate top: w, l, depth
+
+# ---- part heights below the PCB (board frame, positive = depth below the underside) ----
+SOCKET_H = 1.85            # Gateron LP HS 2.0 socket (KS-2P02B01-02)
+SOCKET_TAB_H = 0.4         # its solder tabs (+ solder)
+DIODE_H = 1.15             # SOD-123
+RST_H, RST_PLUNGER = 1.7, (0.35, 1.35)   # EVQ-PUx02K body; plunger depth range
+PWR_H, PWR_LEVER = 1.4, (0.3, 1.1)       # Alps SSSS811101 body; lever depth range
+JST_H = 4.8                # JST PH S2B-PH-K-S side entry
+HEADER_GAP, NANO_T, NANO_PARTS_H = 2.5, 1.0, 1.0
+USB_W, USB_H, USB_D, USB_BELOW_NANO = 8.94, 3.26, 7.35, 2.2
+LED_H = 0.55               # 0603 status LED on the PCB *top* (Lite-On LTST-C191), in the plate gap
+LED_HOLE_R = 0.9           # light hole through the plate above it, under the keycap-gap crossing
+R0603_H = 0.45             # 0603 resistor on the back
+
+mm = pcbnew.ToMM
+b = pcbnew.LoadBoard(BOARD)
+ps = pcbnew.SHAPE_POLY_SET(); b.GetBoardPolygonOutlines(ps)
+ol = ps.Outline(0)
+outline = [[mm(ol.CPoint(i).x), -mm(ol.CPoint(i).y)] for i in range(ol.PointCount())]
+poly_holes = [[[mm(h.CPoint(i).x), -mm(h.CPoint(i).y)] for i in range(h.PointCount())]
+              for h in (ps.Hole(0, k) for k in range(ps.HoleCount(0)))]
+px0, px1 = min(p[0] for p in outline), max(p[0] for p in outline)
+py0, py1 = min(p[1] for p in outline), max(p[1] for p in outline)
+CX, CY = (px0 + px1) / 2, (py0 + py1) / 2
+PCB_R = 0.25               # board corner radius (= board_expand)
+INNER = (px1 - px0 + 2 * PCB_TOL, py1 - py0 + 2 * PCB_TOL, PCB_R + PCB_TOL)
+OUTER = (INNER[0] + 2 * WALL_T, INNER[1] + 2 * WALL_T, INNER[2] + WALL_T)
+Y_PIVOT = py1                         # PCB rear edge
+Y_REAR_IN = CY + INNER[1] / 2
+Y_REAR_OUT = CY + OUTER[1] / 2
+POSTS = [[mm(f.GetPosition().x), -mm(f.GetPosition().y)]
+         for f in b.GetFootprints() if "mounting_hole" in f.GetFPIDAsString()]
+
+boxes, reliefs = [], []
+def box(name, kind, kx0, ky0, kx1, ky1, d0, d1):
+    """KiCad xy extents + depth range below the PCB underside (negative = above)."""
+    boxes.append({"name": name, "kind": kind,
+                  "min": [min(kx0, kx1), -max(ky0, ky1), -max(d0, d1)],
+                  "max": [max(kx0, kx1), -min(ky0, ky1), -min(d0, d1)]})
+
+def pads(f, pred):
+    r = [1e9, 1e9, -1e9, -1e9]
+    for p in f.Pads():
+        if pred(p):
+            bb = p.GetBoundingBox()
+            r = [min(r[0], mm(bb.GetLeft())), min(r[1], mm(bb.GetTop())),
+                 max(r[2], mm(bb.GetRight())), max(r[3], mm(bb.GetBottom()))]
+    return r
+smd = lambda p: p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD
+pth = lambda p: p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH
+
+switches, stabs, cut, lights = [], [], {}, []
+sw_xy = [(mm(f.GetPosition().x), mm(f.GetPosition().y)) for f in b.GetFootprints()
+         if "switch_gateron" in f.GetFPIDAsString()]
+grid_x = sorted(set(round(x, 2) for x, _ in sw_xy if sum(abs(x - x2) < 0.01 for x2, _ in sw_xy) > 1))
+grid_y = sorted(set(round(y, 2) for _, y in sw_xy if sum(abs(y - y2) < 0.01 for _, y2 in sw_xy) > 1))
+on = lambda v, g: any(abs(v - q) < 0.01 for q in g)
+
+for f in b.GetFootprints():
+    ref, fid = f.GetReference(), f.GetFPIDAsString()
+    x, y = mm(f.GetPosition().x), mm(f.GetPosition().y)
+    top = -PCB_T
+    if "switch_gateron" in fid:
+        switches.append([x, -y])
+        # Gateron KS-33 (spec KS-33E10B055NN-Y24): 14.0 body through the plate, 14.7 flange on the
+        # plate top, 13.75 upper housing, 5.75 from the PCB top to the stem top
+        pt = top - (PLATE_TOP - PCB_T)            # plate top, as a depth
+        box(ref, "switch", x - 7.0, y - 7.0, x + 7.0, y + 7.0, top, pt)
+        box(ref + "_flange", "switch", x - 7.35, y - 7.35, x + 7.35, y + 7.35, pt, pt - 1.0)
+        box(ref + "_top", "switch", x - 6.875, y - 6.875, x + 6.875, y + 6.875, pt - 1.0, top - 4.55)
+        box(ref + "_stem", "stem", x - 2.0, y - 0.55, x + 2.0, y + 0.55, top - 4.55, top - 5.75)
+        box(ref + "_stem2", "stem", x - 0.55, y - 2.0, x + 0.55, y + 2.0, top - 4.55, top - 5.75)
+        # hotswap socket body spans its two pins; the solder tabs are thin metal on the pads
+        s = pads(f, lambda p: pth(p) and p.GetNumber() != "")
+        box(ref + "_socket", "socket", s[0], s[1], s[2], s[3], 0, SOCKET_H)
+        for p in f.Pads():
+            if smd(p) and p.IsOnLayer(pcbnew.B_Cu):
+                bb = p.GetBoundingBox()
+                box(ref + "_tab", "socket", mm(bb.GetLeft()), mm(bb.GetTop()), mm(bb.GetRight()), mm(bb.GetBottom()), 0, SOCKET_TAB_H)
+        # 2u keys sit between grid lines: horizontal if off-grid in x, vertical if off-grid in y
+        rot = 0 if not on(x, grid_x) else (90 if not on(y, grid_y) else None)
+        kw = KEYCAP + (PITCH if rot == 0 else 0); kh = KEYCAP + (PITCH if rot == 90 else 0)
+        box(ref + "_cap", "keycap", x - kw / 2, y - kh / 2, x + kw / 2, y + kh / 2, top - 5.0, top - 8.0)
+        if rot is not None:
+            stabs.append([x, -y, rot])
+            bw, bl, bd = STAB_BODY
+            for sgn in (-1, 1):
+                sx, sy = (x + sgn * STAB_DX, y) if rot == 0 else (x, y + sgn * STAB_DX)
+                hw, hl = (bw / 2, bl / 2) if rot == 0 else (bl / 2, bw / 2)
+                box("%s_stab%d" % (ref, sgn), "stab", sx - hw, sy - hl, sx + hw, sy + hl,
+                    -PLATE_TOP, bd - PLATE_TOP)  # from the plate top down bd
+        continue
+    if "mounting_hole" in fid:
+        continue
+    # THT pins of side-B parts poke up through the PCB: relieve them in the plate
+    for p in f.Pads():
+        if p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH):
+            bb = p.GetBoundingBox()
+            reliefs.append([mm(bb.GetLeft()) - PIN_RELIEF, -mm(bb.GetBottom()) - PIN_RELIEF,
+                            mm(bb.GetRight()) + PIN_RELIEF, -mm(bb.GetTop()) + PIN_RELIEF])
+    if "diode" in fid:
+        s = pads(f, smd)
+        cx, cy = (s[0] + s[2]) / 2, (s[1] + s[3]) / 2
+        hx, hy = (1.35, 0.8) if (s[2] - s[0]) > (s[3] - s[1]) else (0.8, 1.35)
+        box(ref, "diode", cx - hx, cy - hy, cx + hx, cy + hy, 0, DIODE_H)
+    elif "mcu_nice_nano" in fid:
+        n0 = HEADER_GAP; n1 = n0 + NANO_T             # nano PCB depth range
+        top_y = y - 16.51
+        box("nano", "nano", x - 9.0, top_y, x + 9.0, top_y + 33.3, n0, n1)
+        box("nano_parts", "nano_parts", x - 6.5, top_y + 6.0, x + 6.5, top_y + 26.0, n1, n1 + NANO_PARTS_H)
+        usb_cx = x - (3.556 - 3.81) / 2               # socket outline mirrored onto side B
+        mouth = y - 18.034
+        u1 = n1 + USB_BELOW_NANO
+        box("usb_c", "usb", usb_cx - USB_W / 2, mouth, usb_cx + USB_W / 2, mouth + USB_D, u1 - USB_H, u1)
+        cut["usb"] = (usb_cx, u1 - USB_H / 2, USB_W, USB_H)
+        for p in f.Pads():
+            if pth(p):
+                hx, hy = mm(p.GetPosition().x), mm(p.GetPosition().y)
+                box("hdr", "header", hx - 1.25, hy - 1.25, hx + 1.25, hy + 1.25, 0, HEADER_GAP)
+    elif "smd_0603" in fid and ref.startswith("LED"):
+        box(ref, "led", x - 0.8, y - 0.4, x + 0.8, y + 0.4, top, top - LED_H)
+        lights.append([x, -y])
+    elif "smd_0603" in fid:
+        box(ref, "part", x - 0.8, y - 0.4, x + 0.8, y + 0.4, 0, R0603_H)
+    elif "reset_switch" in fid:
+        box(ref, "part", x - 2.35, y - 1.75, x + 2.35, y + 1.75, 0, RST_H)
+        box(ref + "_plunger", "actuator", x - 1.3, y - 2.75, x + 1.3, y - 1.75, *RST_PLUNGER)
+        cut["rst"] = (x, sum(RST_PLUNGER) / 2, 2.6, RST_PLUNGER[1] - RST_PLUNGER[0])
+    elif "power_switch" in fid:
+        box(ref, "part", x - 3.4, y - 1.3, x + 3.4, y + 1.3, 0, PWR_H)
+        # lever drawn in the "on" position; the cutout covers its full x +-1.65 travel
+        box(ref + "_lever", "actuator", x + 0.2, y - 2.9, x + 1.5, y - 1.3, *PWR_LEVER)
+        cut["pwr"] = (x, sum(PWR_LEVER) / 2, 3.3, PWR_LEVER[1] - PWR_LEVER[0])
+    elif "jst" in fid:
+        fab = [1e9, 1e9, -1e9, -1e9]
+        for g in f.GraphicalItems():
+            if g.GetLayerName() == "B.Fab":
+                bb = g.GetBoundingBox()
+                fab = [min(fab[0], mm(bb.GetLeft())), min(fab[1], mm(bb.GetTop())),
+                       max(fab[2], mm(bb.GetRight())), max(fab[3], mm(bb.GetBottom()))]
+        box(ref, "part", fab[0], fab[1], fab[2], fab[3], 0, JST_H)
+
+# ---- tilt: lift the board until the lowest part clears the floor ----
+th = math.radians(TILT_DEG)
+def world_z(y, z, z_rear):
+    return z_rear + (y - Y_PIVOT) * math.sin(th) + z * math.cos(th)
+need = 0
+for bx in boxes:
+    if bx["min"][2] < 0:
+        for yy in (bx["min"][1], bx["max"][1]):
+            need = max(need, FLOOR_T + FLOOR_CLEAR - world_z(yy, bx["min"][2], 0))
+Z_REAR = math.ceil(need * 10) / 10
+print("case: inner %.2f x %.2f, outer %.2f x %.2f, centre (%.2f, %.2f)" % (INNER[0], INNER[1], OUTER[0], OUTER[1], CX, CY))
+print("PCB underside: rear edge z=%.2f, front edge z=%.2f" % (Z_REAR, world_z(py0, 0, Z_REAR)))
+print("plate/wall top: rear z=%.2f, front z=%.2f" % (world_z(Y_REAR_OUT, PLATE_TOP, Z_REAR),
+                                                    world_z(CY - OUTER[1] / 2, PLATE_TOP, Z_REAR)))
+
+# ---- screws: longest standard M2 countersunk per pillar that leaves the floor closed ----
+screws = []
+for (px, py) in POSTS:
+    pillar_top = world_z(py, 0, Z_REAR)
+    room = (pillar_top - FLOOR_KEEP) / math.cos(th)             # along the tilted axis
+    fits = [l for l in SCREW_LENGTHS if MIN_THREAD <= l - PLATE_TOP <= room - PILOT_EXTRA]
+    if not fits:
+        raise SystemExit("no standard screw fits the pillar at (%.1f, %.1f)" % (px, py))
+    L = max(fits)
+    screws.append((px, py, L, round(L - PLATE_TOP + PILOT_EXTRA, 2), pillar_top))
+
+# ---- corner ledges (board-frame rects [x0, y0, x1, y1], clipped to the cavity in jscad) ----
+ix0, ix1 = CX - INNER[0] / 2, CX + INNER[0] / 2
+iy0, iy1 = CY - INNER[1] / 2, CY + INNER[1] / 2
+ledges = []
+for (xw, sx) in ((ix0, 1), (ix1, -1)):
+    for (yw, sy) in ((iy0, 1), (iy1, -1)):
+        xs, ys = sorted([xw, xw + sx * LEDGE_ARM]), sorted([yw, yw + sy * LEDGE_W])
+        ledges.append([xs[0], ys[0], xs[1], ys[1]])
+        xs, ys = sorted([xw, xw + sx * LEDGE_W]), sorted([yw, yw + sy * LEDGE_ARM])
+        ledges.append([xs[0], ys[0], xs[1], ys[1]])
+
+# ---- plate underside supports: rim along the edge + spacer bosses ----
+pw, ph, pr = INNER[0] - 2 * PLATE_TOL, INNER[1] - 2 * PLATE_TOL, INNER[2] - PLATE_TOL
+plate_gap = PLATE_TOP - PLATE_T - PCB_T          # plate underside to PCB top
+
+# ---- collision report ----
+def overlap(bx, r):
+    return bx["min"][0] < r[2] and bx["max"][0] > r[0] and bx["min"][1] < r[3] and bx["max"][1] > r[1]
+def circ_hits(bx, c, rad):
+    nx = min(max(c[0], bx["min"][0]), bx["max"][0]); ny = min(max(c[1], bx["min"][1]), bx["max"][1])
+    return math.hypot(c[0] - nx, c[1] - ny) < rad
+issues = []
+rim = [[CX - pw / 2, CY - ph / 2, CX + pw / 2, CY - ph / 2 + RIM_W], [CX - pw / 2, CY + ph / 2 - RIM_W, CX + pw / 2, CY + ph / 2],
+       [CX - pw / 2, CY - ph / 2, CX - pw / 2 + RIM_W, CY + ph / 2], [CX + pw / 2 - RIM_W, CY - ph / 2, CX + pw / 2, CY + ph / 2]]
+for bx in boxes:
+    below = bx["min"][2] < 0                       # anything reaching under the PCB
+    between = bx["max"][2] > PCB_T and bx["min"][2] < PLATE_TOP - PLATE_T   # in the plate gap
+    for c in POSTS:
+        if below and circ_hits(bx, c, POST_R):
+            issues.append("%s hits standoff %s" % (bx["name"], c))
+        if between and circ_hits(bx, c, SPACER_R):
+            issues.append("%s hits plate spacer %s" % (bx["name"], c))
+    for L in ledges:
+        if below and overlap(bx, L):
+            issues.append("%s hits corner ledge %s" % (bx["name"], [round(v, 1) for v in L]))
+    for R in rim:
+        if between and overlap(bx, R) and not bx["kind"].startswith("switch"):
+            issues.append("%s hits plate rim" % bx["name"])
+        if between and bx["kind"] == "switch" and overlap(bx, R):
+            issues.append("%s housing hits plate rim" % bx["name"])
+if LED_H > plate_gap - 0.2:
+    issues.append("LED (%.2f tall) leaves < 0.2 under the plate (gap %.2f)" % (LED_H, plate_gap))
+print("collisions:", issues or "none")
+
+# ---- jscad ----
+J = json.dumps
+r3 = lambda a: [round(v, 3) for v in a]
+common = """
+var TILT = %s, Y_PIVOT = %s, Z_REAR = %s;
+// board frame -> world: tilt about x around the PCB rear edge, then lift
+function T(o) { return o.translate([0, -Y_PIVOT, 0]).rotateX(TILT).translate([0, Y_PIVOT, Z_REAR]); }
+function rrect(c, r, rr) { return CAG.roundedRectangle({ center: c, radius: r, roundradius: rr, resolution: 32 }); }
+""" % (TILT_DEG, round(Y_PIVOT, 4), Z_REAR)
+
+bottom = """// GENERATED by build_case.py from the board. Edit build_case.py, not this file.
+// Bottom tray. World frame: ergogen xy, z = 0 under the floor. Flat floor; the PCB sits on the
+// pillars + corner ledges parallel to the sloped top edge; the switch plate drops in flush with the top.
+%s
+function main() {
+    var floorT = %s, plateTop = %s, gap = %s;
+    var cx = %s, cy = %s, OUT = %s, INN = %s;
+    var yRearIn = %s, yRear = %s;
+    var posts = %s, postR = %s, pilotR = %s, pilotD = %s, ledges = %s;
+    var cuts = %s;   // [x, depth-centre below PCB, w, h] in board frame
+    var outer = rrect([cx, cy], [OUT[0] / 2, OUT[1] / 2], OUT[2]);
+    var inner = rrect([cx, cy], [INN[0] / 2, INN[1] / 2], INN[2]);
+    var cavity = inner.extrude({ offset: [0, 0, 50] });
+    var tray = outer.extrude({ offset: [0, 0, 40] }).subtract(cavity.translate([0, 0, floorT]));
+    // anything above the plate top plane goes (walls end flush with the plate)
+    var big = 400;
+    var abovePlate = T(CSG.cube({ corner1: [cx - big, cy - big, plateTop], corner2: [cx + big, cy + big, plateTop + big] }));
+    var belowPcb   = T(CSG.cube({ corner1: [cx - big, cy - big, -big], corner2: [cx + big, cy + big, 0] }));
+    tray = tray.subtract(abovePlate);
+
+    // supports: screw pillars + corner ledges, trimmed to the (tilted) PCB underside and
+    // kept inside the cavity so nothing pokes through the walls
+    var sup = null;
+    for (var i = 0; i < posts.length; i++) {
+        var c = CSG.cylinder({ start: [posts[i][0], posts[i][1], 0], end: [posts[i][0], posts[i][1], 30], radius: postR, resolution: 32 });
+        sup = sup ? sup.union(c) : c;
+    }
+    for (var k = 0; k < ledges.length; k++) {
+        var L = ledges[k];
+        sup = sup.union(CSG.cube({ corner1: [L[0], L[1], 0], corner2: [L[2], L[3], 30] }));
+    }
+    tray = tray.union(sup.intersect(belowPcb).intersect(cavity));
+    for (var j = 0; j < posts.length; j++) {
+        // blind pilot square to the tilted board (matches the screw axis); the floor stays closed
+        tray = tray.subtract(T(CSG.cylinder({ start: [posts[j][0], posts[j][1], 1], end: [posts[j][0], posts[j][1], -pilotD[j]], radius: pilotR, resolution: 24 })));
+    }
+
+    // rear-wall windows: part outline + gap, in the board frame, then tilted with the board
+    function wallSlab(prof, y0, y1) {   // profile drawn in (x, z) -> slab spanning y0..y1
+        return prof.extrude({ offset: [0, 0, y1 - y0] }).rotateX(90).translate([0, y1, 0]);
+    }
+    function win(c, rr, y0, y1) {
+        return T(wallSlab(rrect([c[0], -c[1]], [c[2] / 2 + gap, c[3] / 2 + gap], rr), y0, y1));
+    }
+    tray = tray.subtract(win(cuts.usb, 1.2, yRearIn - 1, yRear + 1));
+    // outer pocket so a USB-C plug overmold (~12 x 6.5) gets close enough to seat
+    tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [6.4, 3.4], 2.0), yRear - 0.6, yRear + 1)));
+    tray = tray.subtract(win(cuts.rst, 0.6, yRearIn - 1, yRear + 1));
+    tray = tray.subtract(win(cuts.pwr, 0.6, yRearIn - 1, yRear + 1));
+    // nail scoop around the power lever
+    tray = tray.subtract(T(wallSlab(rrect([cuts.pwr[0], -cuts.pwr[1]], [3.2, 1.9], 1.2), yRear - 0.5, yRear + 1)));
+    return tray;
+}
+""" % (common, FLOOR_T, PLATE_TOP, GAP, round(CX, 3), round(CY, 3), J(r3(OUTER)), J(r3(INNER)),
+       round(Y_REAR_IN, 3), round(Y_REAR_OUT, 3), J([r3(p) for p in POSTS]), POST_R, PILOT_R, J([sc[3] for sc in screws]),
+       J([r3(L) for L in ledges]), J({k: r3(c) for k, c in cut.items()}))
+
+plate = """// GENERATED by build_case.py from the board. Edit build_case.py, not this file.
+// Switch plate in the board frame (z = 0 at the PCB underside): plate %s..%s, with a rim and
+// spacer bosses underneath reaching down to the PCB top (z = %s). Pin reliefs are blind pockets
+// from below; screw holes are countersunk from the top. Print it upside down.
+// It drops inside the tray walls (%smm clearance per side).
+%s
+function main() {
+    var cx = %s, cy = %s, pw = %s, ph = %s, pr = %s;
+    var sw = %s, swCut = %s, stabs = %s, holes = %s, screwR = %s, cskR = %s, spacerR = %s, reliefs = %s;
+    var lights = %s, lightR = %s;
+    var plateT = %s, plateBot = %s, pcbTop = %s, rimW = %s, skin = %s;
+    var S = { dx: %s, w: %s, h: %s, notchW: %s, notchD: %s, neckH: %s };
+    var outline = rrect([cx, cy], [pw / 2, ph / 2], pr);
+
+    // stabilizer cutout for a horizontal 2u key centred at the origin (notch toward -y / front)
+    function stabCut() {
+        var c = null;
+        for (var sgn = -1; sgn <= 1; sgn += 2) {
+            var wing = CAG.rectangle({ center: [sgn * S.dx, 0], radius: [S.w / 2, S.h / 2] })
+                .union(CAG.rectangle({ center: [sgn * S.dx, -S.h / 2 - S.notchD / 2 + 0.01], radius: [S.notchW / 2, S.notchD / 2] }))
+                .union(CAG.rectangle({ corner1: [Math.min(sgn * S.dx, 0), -S.neckH / 2], corner2: [Math.max(sgn * S.dx, 0), S.neckH / 2] }));
+            c = c ? c.union(wing) : wing;
+        }
+        return c;
+    }
+    var holesCag = null;
+    function addHole(h) { holesCag = holesCag ? holesCag.union(h) : h; }
+    for (var i = 0; i < sw.length; i++) {
+        addHole(CAG.rectangle({ center: sw[i], radius: [swCut / 2, swCut / 2] }));
+    }
+    // status LED light holes (through), under a keycap-gap crossing
+    for (var l = 0; l < lights.length; l++) {
+        addHole(CAG.circle({ center: lights[l], radius: lightR, resolution: 24 }));
+    }
+    for (var s = 0; s < stabs.length; s++) {
+        addHole(stabCut().rotateZ(stabs[s][2]).translate([stabs[s][0], stabs[s][1]]));
+    }
+    // THT pins poking up through the PCB get blind pockets from below (plate top stays closed)
+    var pockets = null;
+    for (var k = 0; k < reliefs.length; k++) {
+        var r = reliefs[k];
+        var pk = CAG.rectangle({ corner1: [r[0], r[1]], corner2: [r[2], r[3]] });
+        pockets = pockets ? pockets.union(pk) : pk;
+    }
+    var screwHoles = null;
+    for (var j = 0; j < holes.length; j++) {
+        var sh = CAG.circle({ center: holes[j], radius: screwR, resolution: 32 });
+        screwHoles = screwHoles ? screwHoles.union(sh) : sh;
+    }
+
+    // pin pockets are blind from below (plate top stays closed); screw holes go through with a
+    // 90 deg countersink on top for the bevel heads
+    var plateTop = plateBot + plateT;
+    var plate = outline.subtract(holesCag).subtract(screwHoles)
+        .extrude({ offset: [0, 0, plateT] }).translate([0, 0, plateBot])
+        .subtract(pockets.extrude({ offset: [0, 0, plateT - skin + 0.01] }).translate([0, 0, plateBot - 0.01]));
+    for (var c = 0; c < holes.length; c++) {
+        plate = plate.subtract(CSG.cylinder({ start: [holes[c][0], holes[c][1], plateTop + 0.2], end: [holes[c][0], holes[c][1], plateTop - (cskR - screwR)],
+            radiusStart: cskR + 0.2, radiusEnd: screwR, resolution: 32 }));
+    }
+    // underneath: a rim along the edge and spacer bosses at the screws, down to the PCB top
+    var rim = outline.subtract(rrect([cx, cy], [pw / 2 - rimW, ph / 2 - rimW], Math.max(pr - rimW, 0.3)));
+    var bosses = null;
+    for (var b = 0; b < holes.length; b++) {
+        var bc = CAG.circle({ center: holes[b], radius: spacerR, resolution: 32 });
+        bosses = bosses ? bosses.union(bc) : bc;
+    }
+    var under = rim.union(bosses).subtract(holesCag).subtract(screwHoles).subtract(pockets)
+        .extrude({ offset: [0, 0, plateBot - pcbTop + 0.01] }).translate([0, 0, pcbTop]);
+    return plate.union(under);
+}
+""" % (round(PLATE_TOP - PLATE_T, 3), PLATE_TOP, PCB_T, PLATE_TOL, common,
+       round(CX, 3), round(CY, 3), round(pw, 3), round(ph, 3), round(pr, 3),
+       J([r3(s) for s in switches]), SW_CUT, J([r3(s) for s in stabs]), J([r3(p) for p in POSTS]),
+       SCREW_R, CSK_R, SPACER_R, J([r3(r) for r in reliefs]), J([r3(l) for l in lights]), LED_HOLE_R, PLATE_T, round(PLATE_TOP - PLATE_T, 3), PCB_T, RIM_W, PLATE_SKIN,
+       STAB_DX, STAB_W, STAB_H, STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H)
+
+open(os.path.join(HERE, "case_bottom.jscad"), "w").write(bottom)
+open(os.path.join(HERE, "case_plate.jscad"), "w").write(plate)
+
+json.dump({"tilt_deg": TILT_DEG, "y_pivot": Y_PIVOT, "z_rear": Z_REAR,
+           "pcb": {"outline": outline, "poly_holes": poly_holes,
+                   "holes": [[p[0], p[1], SCREW_R] for p in POSTS], "z0": 0, "z1": PCB_T},
+           "boxes": boxes}, open(os.path.join(HERE, "assembly.json"), "w"))
+print("2u stabilizers at:", stabs)
+print("M2 countersunk screws from the top (self-tapping into the pillars):")
+for (px, py, L, depth, top) in screws:
+    print("  (%.1f, %.1f): M2x%d, %.1f mm of thread in a %.2f tall pillar (pilot %.1f deep)" % (
+        px, py, L, L - PLATE_TOP, top, depth))
+print("wrote case_bottom.jscad, case_plate.jscad, assembly.json (%d boxes)" % len(boxes))

@@ -1,0 +1,23 @@
+# KiCad per-user and temporary files
+*.lck
+*.lck.old
+_autosave-*
+*-backups/
+fp-info-cache
+*.kicad_prl
+
+# Tool output and caches
+logs/
+node_modules/
+.jscad/
+__pycache__/
+*.dsn
+*.ses
+freerouting*.jar
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

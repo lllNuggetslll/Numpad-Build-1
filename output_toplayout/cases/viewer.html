@@ -1,0 +1,72 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Numpad assembly</title>
+<style>
+body{margin:0;overflow:hidden;background:#e9e9e9;font:13px system-ui,sans-serif;color:#222}
+#ui{position:fixed;left:10px;top:10px;background:rgba(255,255,255,.92);padding:10px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.15);line-height:1.8}
+#ui b{display:block;margin-bottom:2px} button{margin:2px 4px 2px 0}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+</style></head><body>
+<div id="ui"><b>Numpad case + PCB</b>
+<label><input type="checkbox" id="cCase" checked> Case</label>
+<label><input type="checkbox" id="cGhost"> see-through case</label><br>
+<label><input type="checkbox" id="cPlate" checked> Plate</label>
+<label><input type="checkbox" id="cPcb" checked> PCB</label>
+<label><input type="checkbox" id="cTop" checked> Switches</label>
+<label><input type="checkbox" id="cBot" checked> Back parts</label><br>
+Slice (y): <input type="range" id="clip" min="-115" max="10" step="0.25" value="10" style="width:150px"> <span id="cv"></span><br>
+<button data-v="iso">Overview</button><button data-v="rear">Rear wall</button><button data-v="side">Side section</button><button data-v="under">Underneath</button>
+<div style="margin-top:4px;font-size:12px">
+<span class="sw" style="background:#e0a030"></span>USB / actuators
+<span class="sw" style="background:#2e7d4f"></span>PCB
+<span class="sw" style="background:#555"></span>parts
+<span class="sw" style="background:#5b8fd6"></span>case <span class="sw" style="background:#b8b8c0"></span>plate</div>
+<div style="font-size:11px;color:#666">drag rotate · right-drag pan · wheel zoom</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const r=new THREE.WebGLRenderer({antialias:true});r.localClippingEnabled=true;document.body.appendChild(r.domElement);
+const sc=new THREE.Scene();sc.background=new THREE.Color(0xe9e9e9);
+sc.add(new THREE.AmbientLight(0xffffff,0.5));const dl=new THREE.DirectionalLight(0xffffff,0.75);sc.add(dl);
+const cam=new THREE.PerspectiveCamera(30,1,1,3000);cam.up.set(0,0,1);
+const clipPlane=new THREE.Plane(new THREE.Vector3(0,-1,0),10);const clips=[clipPlane];
+let tgt=new THREE.Vector3(128.5,-52.5,6),th=0.9,ph=0.7,dist=280;
+function render(){cam.position.set(tgt.x+dist*Math.cos(ph)*Math.cos(th),tgt.y+dist*Math.cos(ph)*Math.sin(th),tgt.z+dist*Math.sin(ph));cam.lookAt(tgt);dl.position.copy(cam.position);r.render(sc,cam);}
+function rs(){r.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();render();}
+addEventListener('resize',rs);
+let drag=null;r.domElement.oncontextmenu=e=>e.preventDefault();
+r.domElement.onpointerdown=e=>drag={x:e.clientX,y:e.clientY,b:e.button};onpointerup=()=>drag=null;
+onpointermove=e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+ if(drag.b==2){const s=dist/700,rt=new THREE.Vector3().setFromMatrixColumn(cam.matrix,0),up=new THREE.Vector3().setFromMatrixColumn(cam.matrix,1);tgt.addScaledVector(rt,-dx*s).addScaledVector(up,dy*s);}
+ else{th-=dx*0.01;ph=Math.max(-1.55,Math.min(1.55,ph+dy*0.01));}render();};
+r.domElement.onwheel=e=>{e.preventDefault();dist*=Math.exp(e.deltaY*0.001);render();};
+const mat=(c,o)=>new THREE.MeshPhongMaterial(Object.assign({color:c,clippingPlanes:clips,side:THREE.DoubleSide},o||{}));
+const caseMat=mat(0x5b8fd6,{flatShading:true});
+const groups={case:new THREE.Group(),plate:new THREE.Group(),pcb:new THREE.Group(),top:new THREE.Group(),bot:new THREE.Group()};
+const tiltOuter=new THREE.Group(),tiltInner=new THREE.Group();tiltOuter.add(tiltInner);sc.add(tiltOuter);sc.add(groups.case);
+['plate','pcb','top','bot'].forEach(k=>tiltInner.add(groups[k]));
+function stlGeom(b){const dv=new DataView(b),n=dv.getUint32(80,true),p=new Float32Array(n*9);for(let i=0;i<n;i++)for(let k=0;k<9;k++)p[i*9+k]=dv.getFloat32(84+i*50+12+k*4,true);const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.computeVertexNormals();return g;}
+const colors={switch:0x9a9a9a,stem:0xc04040,socket:0x333333,diode:0x222222,nano:0x1d4f91,nano_parts:0x444444,usb:0xe0a030,header:0x111111,part:0x555555,actuator:0xe0a030};
+const bust='?t='+Date.now();
+Promise.all([fetch('case_bottom.stl'+bust).then(x=>x.arrayBuffer()),fetch('case_plate.stl'+bust).then(x=>x.arrayBuffer()),fetch('assembly.json'+bust).then(x=>x.json())]).then(([b,pb,a])=>{
+ groups.case.add(new THREE.Mesh(stlGeom(b),caseMat));
+ groups.plate.add(new THREE.Mesh(stlGeom(pb),mat(0xb8b8c0,{flatShading:true})));
+ tiltOuter.position.set(0,a.y_pivot,a.z_rear);tiltOuter.rotation.x=a.tilt_deg*Math.PI/180;tiltInner.position.set(0,-a.y_pivot,0);
+ const sh=new THREE.Shape(a.pcb.outline.map(q=>new THREE.Vector2(q[0],q[1])));
+ a.pcb.holes.forEach(h=>{const hp=new THREE.Path();hp.absarc(h[0],h[1],h[2],0,Math.PI*2,true);sh.holes.push(hp);});
+ const pg=new THREE.ExtrudeGeometry(sh,{depth:a.pcb.z1-a.pcb.z0,bevelEnabled:false,curveSegments:24});pg.translate(0,0,a.pcb.z0);
+ groups.pcb.add(new THREE.Mesh(pg,mat(0x2e7d4f)));
+ a.boxes.forEach(bx=>{const s=[0,1,2].map(i=>bx.max[i]-bx.min[i]);const m=new THREE.Mesh(new THREE.BoxGeometry(...s),mat(colors[bx.kind]||0x666666));
+  m.position.set(...[0,1,2].map(i=>(bx.max[i]+bx.min[i])/2));(bx.min[2]>=a.pcb.z1-0.01?groups.top:groups.bot).add(m);});
+ rs();});
+const $=id=>document.getElementById(id);
+$('cCase').onchange=e=>{groups.case.visible=e.target.checked;render();};
+$('cGhost').onchange=e=>{caseMat.transparent=e.target.checked;caseMat.opacity=e.target.checked?0.3:1;caseMat.depthWrite=!e.target.checked;caseMat.needsUpdate=true;render();};
+$('cPlate').onchange=e=>{groups.plate.visible=e.target.checked;render();};
+$('cPcb').onchange=e=>{groups.pcb.visible=e.target.checked;render();};
+$('cTop').onchange=e=>{groups.top.visible=e.target.checked;render();};
+$('cBot').onchange=e=>{groups.bot.visible=e.target.checked;render();};
+function setClip(v){clipPlane.constant=+v;$('clip').value=v;$('cv').textContent=(+v>=10?'off':(+v).toFixed(1));render();}
+$('clip').oninput=e=>setClip(e.target.value);setClip(10);
+const views={iso:[128.5,-52.5,6,0.9,0.7,280,10],rear:[135,7,4.5,1.5708,0.12,70,10],side:[109.5,-52.5,6,0,0,190,10],under:[128.5,-52.5,0,0.9,-0.8,280,10]};
+document.querySelectorAll('button').forEach(bt=>bt.onclick=()=>{const v=views[bt.dataset.v];tgt.set(v[0],v[1],v[2]);th=v[3];ph=v[4];dist=v[5];
+ if(bt.dataset.v=='side'){clipPlane.normal.set(-1,0,0);clipPlane.constant=109.5;$('cv').textContent='x=109.5 (left pillars)';render();}
+ else{clipPlane.normal.set(0,-1,0);setClip(v[6]);}});
+</script></body></html>
