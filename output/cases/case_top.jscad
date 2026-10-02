@@ -1,13 +1,13 @@
 function _top_case_walls_extrude_6_6_outline_fn(){
-    return new CSG.Path2D([[87.05,-109.5],[87.05,4.5]]).appendArc([90.5,7.95],{"radius":3.45,"clockwise":true,"large":false}).appendPoint([166.5,7.95]).appendArc([169.95,4.5],{"radius":3.45,"clockwise":true,"large":false}).appendPoint([169.95,-109.5]).appendArc([166.5,-112.95],{"radius":3.45,"clockwise":true,"large":false}).appendPoint([90.5,-112.95]).appendArc([87.05,-109.5],{"radius":3.45,"clockwise":true,"large":false}).close().innerToCAG()
+    return new CSG.Path2D([[88.8,-109.5],[88.8,4.5]]).appendArc([90.5,6.2],{"radius":1.7,"clockwise":true,"large":false}).appendPoint([166.5,6.2]).appendArc([168.2,4.5],{"radius":1.7,"clockwise":true,"large":false}).appendPoint([168.2,-109.5]).appendArc([166.5,-111.2],{"radius":1.7,"clockwise":true,"large":false}).appendPoint([90.5,-111.2]).appendArc([88.8,-109.5],{"radius":1.7,"clockwise":true,"large":false}).close().innerToCAG()
 .subtract(
-    new CSG.Path2D([[88.25,-109.5],[88.25,4.5]]).appendArc([90.5,6.75],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([166.5,6.75]).appendArc([168.75,4.5],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([168.75,-109.5]).appendArc([166.5,-111.75],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([90.5,-111.75]).appendArc([88.25,-109.5],{"radius":2.25,"clockwise":true,"large":false}).close().innerToCAG()
+    new CSG.Path2D([[90,-109.5],[90,4.5]]).appendArc([90.5,5],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([166.5,5]).appendArc([167,4.5],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([167,-109.5]).appendArc([166.5,-110],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([90.5,-110]).appendArc([90,-109.5],{"radius":0.5,"clockwise":true,"large":false}).close().innerToCAG()
 ).extrude({ offset: [0, 0, 6.6] });
 }
 
 
 function top_case_inner_plate_extrude__1_6_outline_fn(){
-    return new CSG.Path2D([[88.25,-109.5],[88.25,4.5]]).appendArc([90.5,6.75],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([166.5,6.75]).appendArc([168.75,4.5],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([168.75,-109.5]).appendArc([166.5,-111.75],{"radius":2.25,"clockwise":true,"large":false}).appendPoint([90.5,-111.75]).appendArc([88.25,-109.5],{"radius":2.25,"clockwise":true,"large":false}).close().innerToCAG()
+    return new CSG.Path2D([[90,-109.5],[90,4.5]]).appendArc([90.5,5],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([166.5,5]).appendArc([167,4.5],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([167,-109.5]).appendArc([166.5,-110],{"radius":0.5,"clockwise":true,"large":false}).appendPoint([90.5,-110]).appendArc([90,-109.5],{"radius":0.5,"clockwise":true,"large":false}).close().innerToCAG()
 .subtract(
     new CSG.Path2D([[150,-12],[164,-12]]).appendPoint([164,2]).appendPoint([150,2]).appendPoint([150,-12]).close().innerToCAG()
 .union(

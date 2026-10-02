@@ -35,12 +35,12 @@ See **[SHOPPING_LIST.md](SHOPPING_LIST.md)**.
 | `config.yaml` | Ergogen source of truth for the PCB: layout, footprints, outline. |
 | `footprints/ceoloide/` | Upstream ceoloide footprints. |
 | `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED and resistor. |
-| `output_stabfix/` | **Current board.** `pcbs/not_about_money.kicad_pcb` is routed; `not_about_money.unrouted.kicad_pcb` is the raw ergogen output. |
+| `output/` | **Current board.** `pcbs/not_about_money.kicad_pcb` is routed (DRC report `pcbs/drc.rpt`, preview `routed.svg`); `not_about_money.unrouted.kicad_pcb` is the raw ergogen output. |
 | `output/numpad/` | KiCad project holding the current board, plus `fab/` (gerbers + drill + zip). |
 | `case/build_case.py` | Generates the case from the board: `case_bottom.jscad`, `case_plate.jscad`, `assembly.json`. |
 | `case/viewer.html` | 3D viewer of the case, plate, PCB, parts, keycaps and battery. |
 | `case/battery_fit.py` | Finds where LiPo cells fit under the tilted PCB. |
-| `output_*` (others), `config.yaml.*` | Earlier iterations, kept for reference. |
+| Git history | Earlier design iterations (commit `c19e498` has every old `output_*` folder and config backup). |
 | `CLAUDE.md` | Detailed design notes: coordinates, measurements, decisions, gotchas. |
 
 ## 1. Order the PCB
@@ -117,8 +117,10 @@ Requires ergogen v4.1.0 (`npm i -g ergogen@4.1.0`), KiCad 8 (its bundled Python 
 1. **Generate the PCB.** Custom footprints only load when ergogen gets a *directory*. Copy `config.yaml` and
    `footprints/` into a scratch folder, then run:
    ```bash
-   ergogen <scratch-folder> -o output_new --clean
+   ergogen <scratch-folder> -o <scratch-folder>/out --clean
    ```
+   Then copy `out/pcbs`, `out/outlines` and `out/cases` over the ones in `output/`. Don't point ergogen
+   at `output/` directly: `--clean` empties the whole folder, including the routed board.
 2. **Route it.** Export a Specctra DSN with `pcbnew.ExportSpecctraDSN`, then route:
    ```bash
    java -jar freerouting-1.4.5.1.jar -de board.dsn -do board.ses -mp 30

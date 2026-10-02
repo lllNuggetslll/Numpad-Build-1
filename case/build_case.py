@@ -14,7 +14,7 @@
 import json, math, os, pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BOARD = os.path.join(HERE, "..", "output_stabfix", "pcbs", "not_about_money.kicad_pcb")
+BOARD = os.path.join(HERE, "..", "output", "pcbs", "not_about_money.kicad_pcb")
 
 # ---- case ----
 FLOOR_T = 1.0

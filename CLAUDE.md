@@ -76,52 +76,33 @@ Instead, `footprints/custom/mcu_nice_nano_sparse.js` (a copy of the ceoloide foo
 
 ## Files
 
-The folder holds two variants of the design: **Gateron** (the main one, all current work) and **choc**
-(the original ceoloide design, kept for reference). Unless the user says otherwise, "the board" means the
-newest Gateron output. To check which variant a board file is, grep it for `switch_gateron_ks27_ks33` vs
-`switch_choc_v1_v2`.
+Cleaned up 2026-10-01: only the current Gateron design is in the working tree. **Earlier iterations live in
+git history.** Commit `c19e498` has `output_gateron/`, `output_toplayout/`, `output_keygap/`, `output_led/`,
+the original choc output, every `config.yaml.*` backup (`config.yaml.bak` = the original choc config) and the
+`case/build_case.py.pre-*` backups. Restore one with `git checkout c19e498 -- <path>`.
+Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-archive/`, outside the repo.
 
-### Gateron (main)
-
-- `config.yaml`: the ergogen source of truth, Gateron only.
-  - Backups, oldest first: `config.yaml.bak` (original choc config), `config.yaml.pre-toplayout`
-    (Gateron, MCU lying flat), `config.yaml.pre-keygap` (Gateron, top-edge layout, 2mm margin),
-    `config.yaml.pre-stabfix` (keygap + LED, old ±12 symmetric stab holes).
+- `config.yaml`: the ergogen source of truth.
 - `footprints/ceoloide/`: upstream ceoloide footprints. `footprints/custom/`: local modified footprints.
-- `output_stabfix/`: **current** board = `output_led` + STEP-accurate stabilizer cutouts (bars inward), 2u
-  sockets re-rotated with 1.6 outer pads, and two screws moved. Generated 2026-10-01 and **routed** the same day
-  (359→353 tracks, 5 vias, 0 unconnected, DRC: no errors, only the cosmetic lib/silk warnings; report in
-  `pcbs/drc.rpt`, preview `routed.svg`). The unrouted ergogen output is kept as
-  `pcbs/not_about_money.unrouted.kicad_pcb`. **Regenerating with `--clean` wipes the routing.** MCU pins
-  clear by ≥0.258.
-  `case/build_case.py` points here. Backups: `config.yaml.pre-stabfix`, `case/build_case.py.pre-stabfix`.
-  `case/board.html` shows `case/board_stabfix.svg` (back copper + edge cuts).
-- `output_led/`: previous board = `output_keygap` + low-battery LED/resistor. Not routed.
-- `output_keygap/`: previous board (1mm keycap gap, stab holes, S21 rotated). Generated 2026-10-01 and
-  **NOT ROUTED YET** (needs the freerouting jar). Unrouted DRC is clean except edge clearances, which pass
-  once the 0.2mm setting is applied in routing step 3.
-- `case/`: the current case build (outside any ergogen output dir, so `--clean` can't delete it).
-- `output_toplayout/`: previous routed board (top-edge layout, 2mm margin). Its `cases/` folder holds the
-  older case build. `board_xray_topview.svg` is a render of it.
-- `output_gateron/`: first Gateron layout (MCU lying flat on F, power switch on the left edge), routed.
-  The user has edited it by hand, so don't overwrite it. `output_gateron/gateron/` is an empty KiCad
-  project shell.
-- `output/numpad/numpad.kicad_pcb`: the user's KiCad project. Since 2026-10-01 23:16 it holds a copy of the
-  **routed `output_stabfix` board** (DRC clean under the project's own rules, edge clearance 0.2).
-  The previous board/project are kept as `numpad.kicad_pcb.pre-stabfix` / `numpad.kicad_pro.pre-stabfix`.
-  - `output/numpad/fab/`: **current** gerbers + drill (F/B Cu, Mask, Paste, SilkS, Edge.Cuts, one merged
-    `.drl`, drill map, `numpad-gerbers.zip`), exported from that board on 2026-10-01 23:16.
-  - `output/numpad/fab-stale-2026-10-01/`: the old gerbers from the first Gateron layout. Don't send those.
-- `prototype_top_layout.svg`: a mock-up of the top-edge layout options, made before that change.
-
-### Choc (original, reference only)
-
-- `output/pcbs`, `output/outlines`, `output/cases`: the original ergogen choc output (2024-11).
-- `output/numpad/numpad.kicad_pcb.choc-backup` and `numpad.kicad_pcb.prefix.bak`: unrouted choc boards.
-- `output/numpad/_autosave-numpad.kicad_pcb.old`: the routed choc board from 2024-11.
-- `output/numpad/numpad/` and `numpad-backups/`: old KiCad leftovers.
-- To regenerate choc, run ergogen on `config.yaml.bak`, using the same directory bundle described below.
-  Don't change `config.yaml` back to choc.
+- `output/`: **current board** (was `output_stabfix/`).
+  - Contents: the keygap + LED design with STEP-accurate stabilizer cutouts (bars inward), 2u sockets
+    re-rotated with 1.6 outer pads, and two screws moved.
+  - `pcbs/not_about_money.kicad_pcb` is **routed**: 0 unconnected, DRC errors none, only the cosmetic
+    lib/silk warnings; report in `pcbs/drc.rpt`, preview `routed.svg`.
+  - `pcbs/not_about_money.unrouted.kicad_pcb` is the raw ergogen output. MCU pins clear by ≥0.258.
+  - **Never run `ergogen -o output --clean`**: it empties the folder, wiping the routing (and anything else
+    in `output/`). Generate into a scratch dir and copy `pcbs/ outlines/ cases/` over.
+  - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb`.
+- `output/numpad/`: the user's KiCad project. It holds a copy of the routed board (DRC clean under the
+  project's own rules, edge clearance 0.2).
+  - `fab/` holds the **current** gerbers + drill + `numpad-gerbers.zip` (exported 2026-10-01 23:16).
+  - Still contains old leftovers from earlier eras (`numpad.kicad_pcb.choc-backup`, `.prefix.bak`,
+    `*.pre-stabfix`, `fab-stale-2026-10-01/`, `numpad/` subfolder).
+  - **Pending:** move it to a top-level `kicad/` folder and prune those leftovers. It was left in place
+    because KiCad had the project open. The user must close KiCad first.
+- `case/`: case build (`build_case.py`, generated jscad/STL, `viewer.html`, `battery_fit.py`, `board.html` +
+  `board.svg`).
+- `README.md` (build + assembly instructions), `SHOPPING_LIST.md` (BOM).
 
 ## Ergogen gotchas
 
@@ -148,7 +129,7 @@ Ergogen output is unrouted.
    so newer freerouting won't run. The jar isn't kept: download
    `https://github.com/freerouting/freerouting/releases/download/v1.4.5/freerouting-1.4.5.jar` (~4MB).
    - Freerouting 1.4.5 doesn't apply edge clearance to the stab-cutout keepouts, and the first pass of
-     `output_stabfix` left a short, a clearance error and an edge hit (nets R1/R4/R5). Deleting those nets'
+     the stabfix board left a short, a clearance error and an edge hit (nets R1/R4/R5). Deleting those nets'
      tracks, re-exporting the DSN (the remaining tracks stay fixed) and routing again fixed it.
 3. Import the session (`pcbnew.ImportSpecctraSES(board, "x.ses")`), set
    `GetDesignSettings().m_CopperEdgeClearance = FromMM(0.2)`, then save.
@@ -170,7 +151,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 - **Rendering jscad → STL (no GUI):** `npm install --prefix <scratch> @jscad/cli@1`, then
   `<scratch>/node_modules/.bin/openjscad in.jscad -o out.stl`. The **modern @jscad/cli v2 cannot run
   v1 jscad**, so you must use v1. Users can also drag a `.jscad` onto https://openjscad.xyz.
-- **Case build:** `case/build_case.py` (the `BOARD` path at the top points to `output_stabfix`) is the source of
+- **Case build:** `case/build_case.py` (the `BOARD` path at the top points to `output/pcbs`) is the source of
   truth. Run it with KiCad's python. It writes:
   - `case_bottom.jscad`: the tray.
   - `case_plate.jscad`: the plate.
@@ -266,7 +247,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 
 ## Repo / GitHub
 
-- Git repo initialised 2026-10-01 on branch `main`; no remote yet. `README.md` has the build and assembly
+- Git repo initialised 2026-10-01 on branch `main`. Remote `origin` = https://github.com/lllNuggetslll/Numpad-Build-1
+  (public); `main` was pushed 2026-10-01. `README.md` has the build and assembly
   instructions. `SHOPPING_LIST.md` is the BOM. `.gitignore` skips KiCad lock/autosave/cache files, logs,
   node_modules and freerouting files.
 - Keep README.md, SHOPPING_LIST.md and this file in sync when parts, screw lengths or the battery change.
