@@ -53,8 +53,6 @@ function main() {
     tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [6.4, 3.4], 2.0), yRear - 0.6, yRear + 1)));
     tray = tray.subtract(win(cuts.rst, 0.6, yRearIn - 1, yRear + 1));
     tray = tray.subtract(win(cuts.pwr, 0.6, yRearIn - 1, yRear + 1));
-    // nail scoop around the power lever
-    tray = tray.subtract(T(wallSlab(rrect([cuts.pwr[0], -cuts.pwr[1]], [3.2, 1.9], 1.2), yRear - 0.5, yRear + 1)));
     // battery pocket in the floor (cell + gap), plus a notch for its lead toward the JST
     if (batt) {
         var bg = battGap;

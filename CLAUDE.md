@@ -199,15 +199,21 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   PCB cutouts (point-in-polygon test against `assembly.json` `poly_holes`).
 - **Rear-wall windows:** closed on all four sides (the user does NOT want open-topped slots). Each is part
   outline + 0.4 per side, in the board frame. USB-C 8.94×3.26 + an outer overmold pocket 0.6 deep; reset
-  plunger; power lever with ±1.65 travel + a nail scoop. The user is fine angling the PCB in past the lever.
+  plunger; power lever with ±1.65 travel (no nail scoop: the lever pokes ~0.53 past the outer wall). The
+  user is fine angling the PCB in past the lever. The reset plunger stays ~1 mm inside the wall (paperclip).
 - **Part dimensions and where they came from** (2026-10-01):
   - From datasheets/models:
     - Gateron KS-33 switch: spec PDF.
     - KS-57 stabilizer: STEP model.
-    - **Panasonic EVQ-PUC02K** (reset): 4.7×3.5 body, height 1.65 +0.3, modelled at 1.95. Push plate 2.6
-      wide, sticks out 1.0, 0.3 travel.
-    - **Alps SSSS811101** (power): 6.7×2.6×1.4 body. Actuator 1.3 wide, 1.1 thick (centre 0.65 off the board),
-      sticks out 1.5, **1.5 travel** (the window covers the 2.8 sweep + 0.4 per side).
+    - **Panasonic EVQ-PU family** (reset): 4.7×3.5 body, height 1.65 +0.3, modelled at 1.95. Push plate 2.6
+      wide, sticks out 1.0, 0.3 travel. The BOM says **EVQ-PUA02K** (easier to find than PUC02K). PUA has no
+      pegs, so the board's two Ø0.75 boss holes stay empty. Not EVQ-PUD02K (3.2 deep). A generic 2×4 side-push
+      the user found was rejected: different pads.
+    - **Power: MSK-12C02-style side slide, H = 2.5 variant** (2026-10-02, replaces the Alps SSSS811101, whose
+      1.5 lever ended ~0.5 inside the outer wall). Same land pattern as the ceoloide `power_switch_smd_side`
+      footprint (pads mirrored on B), so no PCB change. 6.65×2.7×1.4 body. Actuator 1.3 wide, 1.1 thick
+      (centre 0.65 off the board), sticks out **2.5 from the body face**, **1.5 travel** (the window covers the
+      2.8 sweep + 0.4 per side). Lever tip ends 0.53 past the outer rear wall. The 1.5/2.0 variants are too short.
     - **JST PH S2B-PH-K-S**: 5.9×7.6×4.8. Its pins are 3.4 long, so they poke **1.8 through the PCB top**, but
       the plate pocket only allows 1.6: **trim the JST pins**. The mated PHR-2 plug reaches 9.6 from the back
       of the header; the model adds a plug + 3mm wire-bend keep-out on the +x (open) side.

@@ -76,12 +76,14 @@ BATT_GAP = 0.5                   # pocket clearance around the cell, per side
 BATT_CLEAR = 0.3                 # min space between the cell top and anything above it
 BATT_WIRE = (4.0, 6.0)           # lead notch at the end facing the JST: width, length
 DIODE_H = 1.15             # SOD-123
-# Panasonic EVQ-PUC02K datasheet: 4.7 x 3.5 body, height 1.65 +0.3/-0.1 (modelled at the max),
+# Panasonic EVQ-PU (PUA02K / PUC02K) datasheet: 4.7 x 3.5 body, height 1.65 +0.3/-0.1 (modelled at the max),
 # 2.6-wide push plate sticking out 1.0, 0.3 travel. Plunger depth range is centred on the body.
 RST_H, RST_PLUNGER = 1.95, (0.35, 1.35)
-# Alps SSSS811101 datasheet: 6.7 x 2.6 x 1.4 body; actuator 1.3 wide, 1.1 thick (centred 0.65 off the
-# board), sticks out 1.5, 1.5 travel -> 2.8 total sweep
-PWR_H, PWR_LEVER, PWR_LEVER_W, PWR_TRAVEL, PWR_LEVER_OUT = 1.4, (0.1, 1.2), 1.3, 1.5, 1.5
+# MSK-12C02-style side slide switch, H = 2.5 variant (same land pattern as the Alps SSSS811101):
+# 6.65 x 2.7 x 1.4 body; actuator 1.3 wide, 1.1 thick (centred 0.65 off the board), sticks out 2.5
+# from the body face, 1.5 travel -> 2.8 total sweep. The lever pokes ~0.55 past the outer rear wall.
+PWR_H, PWR_LEVER, PWR_LEVER_W, PWR_TRAVEL, PWR_LEVER_OUT = 1.4, (0.1, 1.2), 1.3, 1.5, 2.5
+PWR_BODY = (6.65, 2.7)
 # JST PH S2B-PH-K-S datasheet: 5.9 wide, 7.6 deep, 4.8 tall; the mated PHR-2 plug (5.8 wide, 4.5 tall)
 # reaches 9.6 from the back of the header; allow 3 more for the wires to bend away
 JST_H, JST_PLUG = 4.8, (9.6, 3.0, 5.8, 4.5)
@@ -225,10 +227,11 @@ for f in b.GetFootprints():
         box(ref + "_plunger", "actuator", x - 1.3, y - 2.75, x + 1.3, y - 1.75, *RST_PLUNGER)
         cut["rst"] = (x, sum(RST_PLUNGER) / 2, 2.6, RST_PLUNGER[1] - RST_PLUNGER[0])
     elif "power_switch" in fid:
-        box(ref, "part", x - 3.4, y - 1.3, x + 3.4, y + 1.3, 0, PWR_H)
+        bw, bd = PWR_BODY[0] / 2, PWR_BODY[1] / 2
+        box(ref, "part", x - bw, y - bd, x + bw, y + bd, 0, PWR_H)
         # lever drawn in the "on" position; the cutout covers its full x +-1.65 travel
         lx = x + PWR_TRAVEL / 2                  # lever drawn in one end position
-        box(ref + "_lever", "actuator", lx - PWR_LEVER_W / 2, y - 1.3 - PWR_LEVER_OUT, lx + PWR_LEVER_W / 2, y - 1.3, *PWR_LEVER)
+        box(ref + "_lever", "actuator", lx - PWR_LEVER_W / 2, y - bd - PWR_LEVER_OUT, lx + PWR_LEVER_W / 2, y - bd, *PWR_LEVER)
         cut["pwr"] = (x, sum(PWR_LEVER) / 2, PWR_LEVER_W + PWR_TRAVEL, PWR_LEVER[1] - PWR_LEVER[0])
     elif "jst" in fid:
         fab = [1e9, 1e9, -1e9, -1e9]
@@ -445,8 +448,6 @@ function main() {
     tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [6.4, 3.4], 2.0), yRear - 0.6, yRear + 1)));
     tray = tray.subtract(win(cuts.rst, 0.6, yRearIn - 1, yRear + 1));
     tray = tray.subtract(win(cuts.pwr, 0.6, yRearIn - 1, yRear + 1));
-    // nail scoop around the power lever
-    tray = tray.subtract(T(wallSlab(rrect([cuts.pwr[0], -cuts.pwr[1]], [3.2, 1.9], 1.2), yRear - 0.5, yRear + 1)));
     // battery pocket in the floor (cell + gap), plus a notch for its lead toward the JST
     if (batt) {
         var bg = battGap;

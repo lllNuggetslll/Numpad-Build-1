@@ -12,8 +12,8 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 | 16 | Header pins | 2.54 mm single-row male headers with standard **2.5 mm** plastic | Only 16 of the 24 positions are used (see the README). Buy a 1×40 strip. |
 | 21 | Hotswap sockets | **Gateron Low Profile Hot-swap 2.0, KS-2P02B01-02** | Must be the **low-profile** version (-02). The regular -01 socket doesn't fit. Sold in packs of 70/110. |
 | 21 | Diodes | 1N4148W, **SOD-123** | |
-| 1 | Reset button | **Panasonic EVQ-PUC02K** | Side-push SMD, the version with locating bosses. |
-| 1 | Power switch | **Alps SSSS811101** | Side slide SMD. |
+| 1 | Reset button | **Panasonic EVQ-PUA02K** (or EVQ-PUC02K / EVQ-PUL02K) | Side-push SMD, 4.7 × 3.5 mm. PUA02K is the easy-to-find one; it has no locating pegs, so the two small holes stay empty. Not EVQ-PUD02K (3.2 mm deep). |
+| 1 | Power switch | **MSK-12C02-style side slide switch, H = 2.5 mm** (7-pin SMD, 6.65 × 2.7 × 1.4 body, 1.5 mm pin pitch) | Must be the **2.5 mm lever** version, so it sticks ~0.5 mm out of the case. The 1.5/2.0 versions (and the Alps SSSS811101) fit the pads but end inside the wall. |
 | 1 | Battery connector | **JST PH S2B-PH-K-S** | 2-pin, 2.0 mm, side entry, through-hole. |
 | 1 | Low-battery LED | **Lite-On LTST-C191KRKT** (0603, red, 0.55 mm tall) | Any 0603 LED up to ~1.4 mm tall fits. |
 | 1 | LED resistor | 1 kΩ, 0603 | |
