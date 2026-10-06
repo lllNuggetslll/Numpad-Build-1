@@ -1,11 +1,20 @@
 ** Drc report for numpad.kicad_pcb **
-** Created on 2026-10-01T23:16:37-0700 **
+** Created on 2026-10-04T18:26:51-0700 **
 
-** Found 84 DRC violations **
+** Found 83 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(147.0000 mm, 61.2500 mm): Segment on Edge.Cuts
     @(147.5000 mm, 67.0000 mm): PCB Text 'JLCJLCJLCJLC' on B.Silkscreen
+[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
+    Local override; warning
+    @(128.5000 mm, 52.5000 mm): Footprint MH5
+[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
+    Local override; warning
+    @(147.5000 mm, 71.5000 mm): Footprint MH3
+[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
+    Local override; warning
+    @(128.5000 mm, 90.5000 mm): Footprint MH4
 [lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
     Local override; warning
     @(147.5000 mm, 14.5000 mm): Footprint MH2
@@ -15,162 +24,192 @@
 [lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
     Local override; warning
     @(109.5000 mm, 33.5000 mm): Footprint MH1
-[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
-    Local override; warning
-    @(128.5000 mm, 90.5000 mm): Footprint MH4
-[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
-    Local override; warning
-    @(128.5000 mm, 52.5000 mm): Footprint MH5
-[lib_footprint_issues]: Footprint 'mounting_hole_npth' not found in library 'ceoloide'.
-    Local override; warning
-    @(147.5000 mm, 71.5000 mm): Footprint MH3
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(119.0000 mm, 62.0000 mm): Footprint S7
+    @(157.0000 mm, 90.5000 mm): Footprint S20
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(119.0000 mm, 5.0000 mm): Footprint S10
+[lib_footprint_issues]: Footprint 'mcu_nice_nano' not found in library 'ceoloide'.
+    Local override; warning
+    @(121.4400 mm, 11.7500 mm): Footprint MCU1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(145.1000 mm, 41.7500 mm): Footprint D15
+    @(107.1000 mm, 3.7500 mm): Footprint D6
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(119.0000 mm, 81.0000 mm): Footprint S6
+    @(119.0000 mm, 24.0000 mm): Footprint S9
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(126.1000 mm, 60.7500 mm): Footprint D8
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(107.1000 mm, 41.7500 mm): Footprint D4
+    @(107.1000 mm, 22.7500 mm): Footprint D5
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(119.0000 mm, 62.0000 mm): Footprint S7
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(100.0000 mm, 5.0000 mm): Footprint S5
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(145.1000 mm, 3.7500 mm): Footprint D17
+    @(116.6000 mm, 98.7500 mm): Footprint D1
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(157.0000 mm, 5.0000 mm): Footprint S18
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(164.1000 mm, 89.2500 mm): Footprint D18
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(100.0000 mm, 62.0000 mm): Footprint S2
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(145.1000 mm, 79.7500 mm): Footprint D13
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(145.1000 mm, 98.7500 mm): Footprint D12
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(126.1000 mm, 22.7500 mm): Footprint D10
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(107.1000 mm, 41.7500 mm): Footprint D4
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(126.1000 mm, 3.7500 mm): Footprint D11
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(100.0000 mm, 24.0000 mm): Footprint S4
+    @(138.0000 mm, 62.0000 mm): Footprint S13
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(138.0000 mm, 81.0000 mm): Footprint S12
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(107.1000 mm, 60.7500 mm): Footprint D3
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(145.1000 mm, 98.7500 mm): Footprint D12
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(157.0000 mm, 24.0000 mm): Footprint S17
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(126.1000 mm, 22.7500 mm): Footprint D10
+    @(138.0000 mm, 5.0000 mm): Footprint S16
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
     @(138.0000 mm, 100.0000 mm): Footprint S11
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(107.1000 mm, 79.7500 mm): Footprint D2
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(126.1000 mm, 41.7500 mm): Footprint D9
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(157.0000 mm, 24.0000 mm): Footprint S17
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(119.0000 mm, 81.0000 mm): Footprint S6
 [lib_footprint_issues]: Footprint 'battery_connector_jst_ph_2' not found in library 'ceoloide'.
     Local override; warning
     @(128.5000 mm, 32.5000 mm): Footprint JST1
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(119.0000 mm, 24.0000 mm): Footprint S9
+    @(109.5000 mm, 100.0000 mm): Footprint S19
+[lib_footprint_issues]: The current configuration does not include the library 'custom'.
+    Local override; warning
+    @(128.5000 mm, 71.5000 mm): Footprint R1
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(119.0000 mm, 43.0000 mm): Footprint S8
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(100.0000 mm, 43.0000 mm): Footprint S3
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(164.1000 mm, 51.2500 mm): Footprint D19
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(145.1000 mm, 22.7500 mm): Footprint D16
-[lib_footprint_issues]: Footprint 'reset_switch_smd_side' not found in library 'ceoloide'.
-    Local override; warning
-    @(137.2000 mm, -2.5000 mm): Footprint RST1
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(107.1000 mm, 79.7500 mm): Footprint D2
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(119.0000 mm, 5.0000 mm): Footprint S10
+    @(100.0000 mm, 81.0000 mm): Footprint S1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(126.1000 mm, 41.7500 mm): Footprint D9
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(109.5000 mm, 100.0000 mm): Footprint S19
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(126.1000 mm, 79.7500 mm): Footprint D7
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(100.0000 mm, 43.0000 mm): Footprint S3
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(164.1000 mm, 22.7500 mm): Footprint D20
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(164.1000 mm, 89.2500 mm): Footprint D18
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(107.1000 mm, 22.7500 mm): Footprint D5
-[lib_footprint_issues]: The current configuration does not include the library 'custom'.
-    Local override; warning
-    @(128.5000 mm, 71.5000 mm): Footprint R1
-[lib_footprint_issues]: Footprint 'power_switch_smd_side' not found in library 'ceoloide'.
-    Local override; warning
-    @(148.5000 mm, -2.9550 mm): Footprint PWR1
-[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
-    Local override; warning
-    @(145.1000 mm, 79.7500 mm): Footprint D13
+    @(145.1000 mm, 3.7500 mm): Footprint D17
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(145.1000 mm, 60.7500 mm): Footprint D14
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(119.0000 mm, 43.0000 mm): Footprint S8
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(157.0000 mm, 52.5000 mm): Footprint S21
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(157.0000 mm, 90.5000 mm): Footprint S20
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(116.6000 mm, 98.7500 mm): Footprint D1
+    @(126.1000 mm, 79.7500 mm): Footprint D7
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
-    @(107.1000 mm, 3.7500 mm): Footprint D6
+    @(145.1000 mm, 41.7500 mm): Footprint D15
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
     @(138.0000 mm, 43.0000 mm): Footprint S14
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(138.0000 mm, 24.0000 mm): Footprint S15
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(100.0000 mm, 81.0000 mm): Footprint S1
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(100.0000 mm, 62.0000 mm): Footprint S2
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(157.0000 mm, 5.0000 mm): Footprint S18
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(138.0000 mm, 62.0000 mm): Footprint S13
-[lib_footprint_issues]: Footprint 'mcu_nice_nano' not found in library 'ceoloide'.
-    Local override; warning
-    @(121.4400 mm, 13.2500 mm): Footprint MCU1
-[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
-    Local override; warning
-    @(138.0000 mm, 5.0000 mm): Footprint S16
+    @(157.0000 mm, 52.5000 mm): Footprint S21
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(164.1000 mm, 3.7500 mm): Footprint D21
+[lib_footprint_issues]: Footprint 'power_switch_smd_side' not found in library 'ceoloide'.
+    Local override; warning
+    @(148.5000 mm, -2.9550 mm): Footprint PWR1
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(164.1000 mm, 22.7500 mm): Footprint D20
+[lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
+    Local override; warning
+    @(107.1000 mm, 60.7500 mm): Footprint D3
 [lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
     Local override; warning
-    @(100.0000 mm, 5.0000 mm): Footprint S5
+    @(100.0000 mm, 24.0000 mm): Footprint S4
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(138.0000 mm, 81.0000 mm): Footprint S12
+[lib_footprint_issues]: Footprint 'reset_switch_smd_side' not found in library 'ceoloide'.
+    Local override; warning
+    @(137.2000 mm, -2.5000 mm): Footprint RST1
+[lib_footprint_issues]: Footprint 'switch_gateron_ks27_ks33' not found in library 'ceoloide'.
+    Local override; warning
+    @(138.0000 mm, 24.0000 mm): Footprint S15
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 by ceoloide' on B.Silkscreen
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(147.5000 mm, 67.0000 mm): PCB Text 'JLCJLCJLCJLC' on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(115.1500 mm, -2.2800 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(115.1500 mm, 28.3200 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(130.3900 mm, -2.2800 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(130.3900 mm, 28.3200 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(125.9100 mm, 21.9100 mm): Footprint Text 'R5' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(116.9700 mm, 6.6700 mm): Footprint Text 'V+' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(116.9700 mm, 21.9100 mm): Footprint Text 'C4' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(125.9100 mm, 24.4500 mm): Footprint Text 'R6' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(116.9700 mm, 24.4500 mm): Footprint Text 'R1' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(116.9700 mm, 4.1300 mm): Footprint Text 'RS' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(163.7000 mm, 89.0000 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(164.1000 mm, 89.0000 mm): Segment on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(164.1000 mm, 89.6000 mm): Segment on B.Silkscreen
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(134.8600 mm, 29.4400 mm): Segment on B.Silkscreen
@@ -186,83 +225,42 @@
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(164.1000 mm, 51.6000 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(163.7000 mm, 89.0000 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(164.1000 mm, 89.0000 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(164.1000 mm, 89.6000 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(115.1500 mm, -0.7800 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(115.1500 mm, 29.8200 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(130.3900 mm, -0.7800 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(130.3900 mm, 29.8200 mm): Segment on B.Silkscreen
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(116.9700 mm, 23.4100 mm): Footprint Text 'C4' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(125.9100 mm, 5.6300 mm): Footprint Text 'GN' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(116.9700 mm, 25.9500 mm): Footprint Text 'R1' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(116.9700 mm, 8.1700 mm): Footprint Text 'V+' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(116.9700 mm, 3.0900 mm): Footprint Text 'GN' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(116.9700 mm, 5.6300 mm): Footprint Text 'RS' of MCU1
-[silk_over_copper]: Silkscreen clipped by solder mask
-    Local override; warning
-    @(125.9100 mm, 20.8700 mm): Footprint Text 'R4' of MCU1
-[silk_overlap]: Silkscreen overlap
-    Rule: board setup constraints silk; warning
-    @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 by ceoloide' on B.Silkscreen
-    @(134.8600 mm, 30.3600 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
     @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 by ceoloide' on B.Silkscreen
     @(134.8600 mm, 29.4400 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-    @(126.1000 mm, 23.1000 mm): Segment on B.Silkscreen
+    @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 by ceoloide' on B.Silkscreen
+    @(134.8600 mm, 30.3600 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-    @(126.1000 mm, 23.1000 mm): Segment on B.Silkscreen
+    @(125.9100 mm, 21.9100 mm): Footprint Text 'R5' of MCU1
+    @(126.1000 mm, 22.5000 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-    @(126.1000 mm, 23.1000 mm): Segment on B.Silkscreen
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(125.7000 mm, 3.5000 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-    @(126.5000 mm, 22.5000 mm): Segment on B.Silkscreen
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(126.1000 mm, 4.1000 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(125.9100 mm, 23.4100 mm): Footprint Text 'R5' of MCU1
-    @(126.1000 mm, 23.5000 mm): Segment on B.Silkscreen
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(126.1000 mm, 4.1000 mm): Segment on B.Silkscreen
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
-    @(127.0400 mm, 29.4400 mm): Segment on B.Silkscreen
-    @(127.7300 mm, -0.7800 mm): Segment on B.Silkscreen
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(126.1000 mm, 4.5000 mm): Segment on B.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(126.1000 mm, 4.1000 mm): Segment on B.Silkscreen
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(125.9100 mm, 4.1300 mm): Footprint Text 'GN' of MCU1
+    @(126.5000 mm, 3.5000 mm): Segment on B.Silkscreen
 
 ** Found 0 unconnected pads **
 

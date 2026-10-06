@@ -52,7 +52,8 @@ stabilizer cutouts are part of the board outline.
 ## 2. Print the case
 
 - **`case/case_bottom.stl`:** print as-is (floor down). It has a 0.5 mm battery pocket in the floor and three
-  windows in the back wall: USB-C, reset, and the power-switch lever.
+  windows in the back wall: USB-C, reset, and the power-switch lever. The USB-C port sits at the back of a
+  12.5 × 6.5 mm recess so a cable head can reach it; the recess's back wall is flush with the port.
 - **`case/case_plate.stl`:** print **upside down** (plate top on the bed). The edge rim and the spacer posts
   around the screws are on its underside.
 - **Settings:** PLA or PETG, 0.2 mm layers. No supports needed.
@@ -86,8 +87,9 @@ low-battery LED, which is on the front.
    - Clip the stabilizers into the plate. The wire bar faces the middle of the board.
    - Press the switches into the plate.
    - Lower the plate onto the PCB so the switch pins enter the sockets.
-8. **Into the case:** angle the PCB in at the back first, so the power lever slips through its window (it
-   pokes about 0.5 mm out of the back). Then drop
+8. **Into the case:** angle the PCB in at the back first and slide it back, so the power lever slips
+   through its window (it pokes about 0.5 mm out of the back) and the USB-C port slides into its window
+   (it sits inside the wall, so it can't drop in from above). Then drop
    the front onto the pillars.
 9. **Screws:** fit the countersunk M2 screws through the plate. Use **M2×8** at the back-left, back-right and
    centre pillars, and **M2×6** at the two front pillars. Tighten gently; they cut their own thread in the

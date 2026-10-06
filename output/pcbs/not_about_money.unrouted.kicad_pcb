@@ -11,7 +11,7 @@
   (paper "A3")
   (title_block
     (title "not_about_money")
-    (date "2026-10-02")
+    (date "2026-10-05")
     (rev "v1.0.0")
     (company "Unknown")
   )
@@ -1344,7 +1344,7 @@
     
   (footprint "ceoloide:mcu_nice_nano"
     (layer "B.Cu")
-    (at 121.44 13.25 0)
+    (at 121.44 11.75 0)
     (property "Reference" "MCU1"
       (at 0 -15 0)
       (layer "B.SilkS")
@@ -1523,6 +1523,12 @@
     
     
     
+    
+    (model "${KIPRJMOD}/3d/nice_nano_v2.step"
+      (offset (xyz 0 0.11 2.45))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 -90))
+    )
     
   )
 

@@ -27,9 +27,8 @@ POST_R, SCREW_R = 3.0, 1.1
 # the plate boss and PCB, then self-tap into a blind pilot in the pillar. Every hole runs square to the
 # tilted board, so the head sits flush in the plate, and nothing shows under the case.
 CSK_R = 2.0                # countersink top radius (M2 DIN 965 head dk 3.8), 90 deg
-PILOT_R = 0.8              # self-tapping M2 pilot in the pillar
-PILOT_EXTRA = 0.5          # pilot runs this much past the screw tip
-FLOOR_KEEP = 0.8           # solid plastic left under the pilot (world z)
+PILOT_R = 0.8              # self-tapping M2 pilot in the pillar; runs the full pillar, stops flat on the floor
+PILOT_EXTRA = 0.5          # min pilot left below the screw tip
 MIN_THREAD = 1.5
 SCREW_LENGTHS = [4, 5, 6, 8, 10, 12]   # countersunk length includes the head
 LEDGE_W, LEDGE_ARM = 1.6, 10.0   # corner support ledges: width in from the wall, arm length
@@ -87,8 +86,25 @@ PWR_BODY = (6.65, 2.7)
 # JST PH S2B-PH-K-S datasheet: 5.9 wide, 7.6 deep, 4.8 tall; the mated PHR-2 plug (5.8 wide, 4.5 tall)
 # reaches 9.6 from the back of the header; allow 3 more for the wires to bend away
 JST_H, JST_PLUG = 4.8, (9.6, 3.0, 5.8, 4.5)
-HEADER_GAP, NANO_T, NANO_PARTS_H = 2.5, 1.0, 1.0
-USB_W, USB_H, USB_D, USB_BELOW_NANO = 8.94, 3.26, 7.35, 2.2
+# nice!nano v2 from its CAD model ("nice!nano v2.step", GCT USB4520-03-0-A mid-mount USB-C). Mounted
+# components-away (reverse_mount: false), so the bare face is toward our PCB, HEADER_GAP below it
+# (2.5 plastic header spacers). PCB 17.8 x 33.2 x 1.4; parts up to 1.1 above its outer face.
+# USB-C shell 8.94 x 3.16, from 0.783 *above* the bare face (toward our PCB) to 1.977 past the outer
+# face; mouth 4.747 past the first header pin row, 6.5 deep, centred on the board width (+-0.075).
+HEADER_GAP, NANO_T, NANO_PARTS_H = 2.5, 1.4, 1.1
+NANO_W, NANO_L, NANO_EDGE = 17.8, 33.2, 3.79     # NANO_EDGE: first pin row to the USB-end board edge
+USB_W, USB_H, USB_D, USB_OUT, USB_INTO_GAP = 8.94, 3.16, 6.5, 4.747, 0.783
+# Preview offset: slides the nano toward the top edge (KiCad -y) in the case model only, to try a move
+# before changing the PCB. Keep it 0 when the board is current (the 1.5 move is now in config.yaml).
+NANO_SHIFT = 0.0
+USB_GAP = 0.25             # USB-C window clearance per side (from the CAD model; other windows use GAP)
+# cable-head scoop around the USB-C window: w x h, corner radius. The USB mouth sits 0.8 inside the inner
+# wall face, so a collar inside the case fills in around the port: the scoop is a recess from the outer
+# face down to a back wall flush with the USB mouth, and only the USB window goes through that.
+USB_SCOOP = (12.5, 6.5, 1.5)
+COLLAR_M = 1.2             # collar margin around the scoop (sides and below; it runs down to the floor)
+COLLAR_T = 0.6             # collar thickness behind the mouth plane (clear of the nano's PCB edge)
+COLLAR_TOP = 0.2           # collar top stays this far below the PCB underside
 LED_H = 1.1                # 0603 status LED on the PCB *top*: allow any 0603 (thin LTST-C191 is 0.55)
 LED_POCKET = (3.8, 2.0)    # counterbore in the plate underside over the LED + its pads (blind, PLATE_SKIN left)
 LED_HOLE_R = 0.9           # light hole through the plate above it, under the keycap-gap crossing
@@ -191,11 +207,12 @@ for f in b.GetFootprints():
     if "mounting_hole" in fid:
         continue
     # THT pins of side-B parts poke up through the PCB: relieve them in the plate
+    dy = NANO_SHIFT if "mcu_nice_nano" in fid else 0.0       # preview shift (ergogen +y = toward the top edge)
     for p in f.Pads():
         if p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH):
             bb = p.GetBoundingBox()
-            reliefs.append([mm(bb.GetLeft()) - PIN_RELIEF, -mm(bb.GetBottom()) - PIN_RELIEF,
-                            mm(bb.GetRight()) + PIN_RELIEF, -mm(bb.GetTop()) + PIN_RELIEF])
+            reliefs.append([mm(bb.GetLeft()) - PIN_RELIEF, -mm(bb.GetBottom()) - PIN_RELIEF + dy,
+                            mm(bb.GetRight()) + PIN_RELIEF, -mm(bb.GetTop()) + PIN_RELIEF + dy])
     if "diode" in fid:
         s = pads(f, smd)
         cx, cy = (s[0] + s[2]) / 2, (s[1] + s[3]) / 2
@@ -203,17 +220,19 @@ for f in b.GetFootprints():
         box(ref, "diode", cx - hx, cy - hy, cx + hx, cy + hy, 0, DIODE_H)
     elif "mcu_nice_nano" in fid:
         n0 = HEADER_GAP; n1 = n0 + NANO_T             # nano PCB depth range
-        top_y = y - 16.51
-        box("nano", "nano", x - 9.0, top_y, x + 9.0, top_y + 33.3, n0, n1)
+        y -= NANO_SHIFT
+        pin1_y = y - 12.7                             # header row nearest the USB end
+        top_y = pin1_y - NANO_EDGE
+        box("nano", "nano", x - NANO_W / 2, top_y, x + NANO_W / 2, top_y + NANO_L, n0, n1)
         box("nano_parts", "nano_parts", x - 6.5, top_y + 6.0, x + 6.5, top_y + 26.0, n1, n1 + NANO_PARTS_H)
-        usb_cx = x - (3.556 - 3.81) / 2               # socket outline mirrored onto side B
-        mouth = y - 18.034
-        u1 = n1 + USB_BELOW_NANO
-        box("usb_c", "usb", usb_cx - USB_W / 2, mouth, usb_cx + USB_W / 2, mouth + USB_D, u1 - USB_H, u1)
-        cut["usb"] = (usb_cx, u1 - USB_H / 2, USB_W, USB_H)
+        usb_cx = x
+        mouth = pin1_y - USB_OUT
+        u0 = n0 - USB_INTO_GAP
+        box("usb_c", "usb", usb_cx - USB_W / 2, mouth, usb_cx + USB_W / 2, mouth + USB_D, u0, u0 + USB_H)
+        cut["usb"] = (usb_cx, u0 + USB_H / 2, USB_W, USB_H)
         for p in f.Pads():
             if pth(p):
-                hx, hy = mm(p.GetPosition().x), mm(p.GetPosition().y)
+                hx, hy = mm(p.GetPosition().x), mm(p.GetPosition().y) - NANO_SHIFT
                 box("hdr", "header", hx - 1.25, hy - 1.25, hx + 1.25, hy + 1.25, 0, HEADER_GAP)
     elif "smd_0603" in fid and ref.startswith("LED"):
         box(ref, "led", x - 0.8, y - 0.4, x + 0.8, y + 0.4, top, top - LED_H)
@@ -261,16 +280,16 @@ print("PCB underside: rear edge z=%.2f, front edge z=%.2f" % (Z_REAR, world_z(py
 print("plate/wall top: rear z=%.2f, front z=%.2f" % (world_z(Y_REAR_OUT, PLATE_TOP, Z_REAR),
                                                     world_z(CY - OUTER[1] / 2, PLATE_TOP, Z_REAR)))
 
-# ---- screws: longest standard M2 countersunk per pillar that leaves the floor closed ----
+# ---- screws: longest standard M2 countersunk per pillar; the pilot runs down to the floor top ----
 screws = []
 for (px, py) in POSTS:
     pillar_top = world_z(py, 0, Z_REAR)
-    room = (pillar_top - FLOOR_KEEP) / math.cos(th)             # along the tilted axis
+    room = (pillar_top - FLOOR_T) / math.cos(th)                # pilot depth along the tilted axis
     fits = [l for l in SCREW_LENGTHS if MIN_THREAD <= l - PLATE_TOP <= room - PILOT_EXTRA]
     if not fits:
         raise SystemExit("no standard screw fits the pillar at (%.1f, %.1f)" % (px, py))
     L = max(fits)
-    screws.append((px, py, L, round(L - PLATE_TOP + PILOT_EXTRA, 2), pillar_top))
+    screws.append((px, py, L, round(room, 2), pillar_top))
 
 # ---- corner ledges (board-frame rects [x0, y0, x1, y1], clipped to the cavity in jscad) ----
 ix0, ix1 = CX - INNER[0] / 2, CX + INNER[0] / 2
@@ -286,6 +305,12 @@ for (xw, sx) in ((ix0, 1), (ix1, -1)):
 # ---- plate underside supports: rim along the edge + spacer bosses ----
 pw, ph, pr = INNER[0] - 2 * PLATE_TOL, INNER[1] - 2 * PLATE_TOL, INNER[2] - PLATE_TOL
 plate_gap = PLATE_TOP - PLATE_T - PCB_T          # plate underside to PCB top
+
+# ---- USB collar (board frame: y ergogen, z = 0 at the PCB underside, negative below) ----
+ub = next(bx for bx in boxes if bx["name"] == "usb_c")
+usb_mouth = ub["max"][1]
+collar = None if usb_mouth >= Y_REAR_IN - 0.05 else [cut["usb"][0] - USB_SCOOP[0] / 2 - COLLAR_M, usb_mouth - COLLAR_T,
+          cut["usb"][0] + USB_SCOOP[0] / 2 + COLLAR_M, Y_REAR_IN + 0.5, -COLLAR_TOP]
 
 # ---- collision report ----
 def overlap(bx, r):
@@ -304,6 +329,8 @@ for bx in boxes:
             issues.append("%s hits standoff %s" % (bx["name"], c))
         if between and circ_hits(bx, c, SPACER_R):
             issues.append("%s hits plate spacer %s" % (bx["name"], c))
+    if collar and bx["name"] != "usb_c" and bx["min"][2] < -COLLAR_TOP and overlap(bx, collar[:4]):
+        issues.append("%s hits the USB collar" % bx["name"])
     for L in ledges:
         if below and overlap(bx, L):
             issues.append("%s hits corner ledge %s" % (bx["name"], [round(v, 1) for v in L]))
@@ -403,7 +430,7 @@ bottom = """// GENERATED by build_case.py from the board. Edit build_case.py, no
 // pillars + corner ledges parallel to the sloped top edge; the switch plate drops in flush with the top.
 %s
 function main() {
-    var floorT = %s, plateTop = %s, gap = %s;
+    var floorT = %s, plateTop = %s, gap = %s, usbGap = %s, scoop = %s, collar = %s, usbMouth = %s;
     var cx = %s, cy = %s, OUT = %s, INN = %s;
     var yRearIn = %s, yRear = %s;
     var posts = %s, postR = %s, pilotR = %s, pilotD = %s, ledges = %s;
@@ -431,21 +458,26 @@ function main() {
         sup = sup.union(CSG.cube({ corner1: [L[0], L[1], 0], corner2: [L[2], L[3], 30] }));
     }
     tray = tray.union(sup.intersect(belowPcb).intersect(cavity));
+    // collar around the USB port inside the rear wall, so the scoop has a back wall flush with the USB mouth
+    if (collar) tray = tray.union(T(CSG.cube({ corner1: [collar[0], collar[1], -big], corner2: [collar[2], collar[3], collar[4]] })).intersect(cavity));
     for (var j = 0; j < posts.length; j++) {
-        // blind pilot square to the tilted board (matches the screw axis); the floor stays closed
-        tray = tray.subtract(T(CSG.cylinder({ start: [posts[j][0], posts[j][1], 1], end: [posts[j][0], posts[j][1], -pilotD[j]], radius: pilotR, resolution: 24 })));
+        // pilot square to the tilted board (matches the screw axis), down the whole pillar and cut
+        // flat at the floor top, so the floor stays closed
+        var pilot = T(CSG.cylinder({ start: [posts[j][0], posts[j][1], 1], end: [posts[j][0], posts[j][1], -pilotD[j] - 1], radius: pilotR, resolution: 24 }));
+        tray = tray.subtract(pilot.intersect(CSG.cube({ corner1: [posts[j][0] - 5, posts[j][1] - 5, floorT], corner2: [posts[j][0] + 5, posts[j][1] + 5, plateTop + 20] })));
     }
 
     // rear-wall windows: part outline + gap, in the board frame, then tilted with the board
     function wallSlab(prof, y0, y1) {   // profile drawn in (x, z) -> slab spanning y0..y1
         return prof.extrude({ offset: [0, 0, y1 - y0] }).rotateX(90).translate([0, y1, 0]);
     }
-    function win(c, rr, y0, y1) {
-        return T(wallSlab(rrect([c[0], -c[1]], [c[2] / 2 + gap, c[3] / 2 + gap], rr), y0, y1));
+    function win(c, rr, y0, y1, g) {
+        if (g === undefined) g = gap;
+        return T(wallSlab(rrect([c[0], -c[1]], [c[2] / 2 + g, c[3] / 2 + g], rr), y0, y1));
     }
-    tray = tray.subtract(win(cuts.usb, 1.2, yRearIn - 1, yRear + 1));
-    // outer pocket so a USB-C plug overmold (~12 x 6.5) gets close enough to seat
-    tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [6.4, 3.4], 2.0), yRear - 0.6, yRear + 1)));
+    tray = tray.subtract(win(cuts.usb, 1.2, (collar ? collar[1] : yRearIn) - 1, yRear + 1, usbGap));
+    // cable-head scoop: recess from the outer face down to the USB mouth plane (flush with the port)
+    tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [scoop[0] / 2, scoop[1] / 2], scoop[2]), usbMouth, yRear + 1)));
     tray = tray.subtract(win(cuts.rst, 0.6, yRearIn - 1, yRear + 1));
     tray = tray.subtract(win(cuts.pwr, 0.6, yRearIn - 1, yRear + 1));
     // battery pocket in the floor (cell + gap), plus a notch for its lead toward the JST
@@ -456,7 +488,7 @@ function main() {
     }
     return tray;
 }
-""" % (common, FLOOR_T, PLATE_TOP, GAP, round(CX, 3), round(CY, 3), J(r3(OUTER)), J(r3(INNER)),
+""" % (common, FLOOR_T, PLATE_TOP, GAP, USB_GAP, J(USB_SCOOP), J(r3(collar) if collar else None), round(usb_mouth, 3), round(CX, 3), round(CY, 3), J(r3(OUTER)), J(r3(INNER)),
        round(Y_REAR_IN, 3), round(Y_REAR_OUT, 3), J([r3(p) for p in POSTS]), POST_R, PILOT_R, J([sc[3] for sc in screws]),
        J([r3(L) for L in ledges]), J({k: r3(c) for k, c in cut.items()}),
        J(r3(batt_rect) if batt_rect else None), J(r3(wire_rect) if wire_rect else None), BATT_POCKET_D, BATT_GAP)

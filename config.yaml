@@ -347,8 +347,14 @@ pcbs:
           VCC_label: "V+"
           side: B
           show_silk_labels_on_both_sides: false
+          # the user's nice!nano v2 CAD model (kicad/3d/), components-away on 2.5 header spacers. Verified by
+          # exporting the board to STEP: rotate -90 puts the USB at the top edge, y 0.11 lines the pins up.
+          mcu_3dmodel_filename: '"${KIPRJMOD}/3d/nice_nano_v2.step"'
+          mcu_3dmodel_xyz_offset: [0, 0.11, 2.45]   # z: 2.5 spacer, less KiCad's 0.05 back-side drop
+          mcu_3dmodel_xyz_rotation: [0, 0, -90]
         adjust:
-          shift: [2.44, -6.5 - (2 - board_expand)]
+          # +1.5 (2026-10-04): nano edge flush with the PCB edge, USB-C 0.96 past it into the case wall
+          shift: [2.44, -6.5 - (2 - board_expand) + 1.5]
 
       on_off_switch:
         # Back side, lever pointing up, 20mm from the right edge

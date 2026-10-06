@@ -15,7 +15,8 @@ Gateron low-profile **hotswap** switches. Generated with ergogen; routed with fr
   **back (side B)**: the nice!nano, power switch, reset button and JST connector. Keep new parts on B
   unless the user says otherwise.
 - **Top edge layout:** the nice!nano, on/off switch and reset button all point **up** out of the top edge.
-  - nice!nano: USB at the top edge, left of center (KiCad x=121.44, y=13.25, rotation 0).
+  - nice!nano: USB at the top edge, left of center (KiCad x=121.44, y=11.75, rotation 0; moved 1.5 toward the
+    edge on 2026-10-04 so its board edge is flush with the PCB edge and the USB-C pokes 0.96 past it).
   - Power switch: 20mm from the right edge (x=148.5), `rotate: 90` so the lever points up.
   - Reset button: between the controller and the power switch (x=137.2).
 - **Keycap spacing:** 1u keycaps are 18mm on a 19mm pitch, so there's a 1mm gap between caps. The user
@@ -86,19 +87,33 @@ Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-arc
 - `footprints/ceoloide/`: upstream ceoloide footprints. `footprints/custom/`: local modified footprints.
 - `output/`: **current board** (was `output_stabfix/`).
   - Contents: the keygap + LED design with STEP-accurate stabilizer cutouts (bars inward), 2u sockets
-    re-rotated with 1.6 outer pads, and two screws moved.
+    re-rotated with 1.6 outer pads, two screws moved, and the nano shifted 1.5 toward the edge (re-routed
+    2026-10-04).
   - `pcbs/not_about_money.kicad_pcb` is **routed**: 0 unconnected, DRC errors none, only the cosmetic
     lib/silk warnings; report in `pcbs/drc.rpt`, preview `routed.svg`.
-  - `pcbs/not_about_money.unrouted.kicad_pcb` is the raw ergogen output. MCU pins clear by ≥0.258.
+  - `pcbs/not_about_money.unrouted.kicad_pcb` is the raw ergogen output. MCU pins clear other pads by ≥1.51.
   - **Never run `ergogen -o output --clean`**: it empties the folder, wiping the routing (and anything else
     in `output/`). Generate into a scratch dir and copy `pcbs/ outlines/ cases/` over.
   - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb`.
 - `kicad/`: the user's KiCad project (moved from `output/numpad/` on 2026-10-02, so ergogen can't wipe it).
   - `numpad.kicad_pcb` is a copy of the routed board. DRC is clean under the project's own rules (edge
     clearance 0.2): 0 violations, 0 unconnected.
-  - `fab/` holds the **current** gerbers + drill + `numpad-gerbers.zip`.
-  - `numpad.kicad_pcb.zip` is a **PCBWay order package** (gerbers, drill, PCBWay BOM/netlist/positions),
-    exported from the current board 2026-10-01 23:37, likely with PCBWay's KiCad plugin.
+  - **`scripts/export_all.sh` regenerates every fab output** from `numpad.kicad_pcb` (run it after any board change):
+    - `fab/`: gerbers (`--subtract-soldermask`, 9 layers), drill + map, `drc-report.txt`, `numpad-gerbers.zip`.
+    - `numpad.kicad_pcb.zip`: the **PCBWay order package** in the PCBWay plugin's format: `.gbr` gerbers incl.
+      User_Comments, separate PTH/NPTH Excellon (inch, decimal, absolute), IPC-D-356 netlist (needs KiCad 10's
+      kicad-cli), `PCBWay_bom.csv`/`PCBWay_positions.csv` (`scripts/pcbway_bom.py`; it honours the footprints'
+      exclude-from-BOM/pos flags, so the nano and switches are left out).
+    - `gerber_render_top/bottom.png` (`scripts/render.py`): flat 4-colour 20 px/mm renders, both seen from the top
+      (copper, then silk, then mask openings, then outline). README shows the top one.
+    - Verified 2026-10-04: run on the old board, both recipes reproduce the 2026-10-01 exports exactly except
+      timestamps (and KiCad 8 adds `FMAT,2` to the drill files); the renders match to 1-px edge rounding.
+  - `3d/nice_nano_v2.step`: the user's nice!nano v2 CAD model, referenced by the MCU footprint as
+    `${KIPRJMOD}/3d/nice_nano_v2.step` (so it only resolves next to a `.kicad_pro`). Footprint params in
+    `config.yaml`: rotate `[0,0,-90]`, offset `[0,0.11,2.45]`. For a B-side footprint KiCad keeps the model's x/y
+    and flips z, and drops it 0.05 extra; KiCad's +90 turned the USB the wrong way. Verified by
+    `kicad-cli pcb export step` + parsing: USB mouth at KiCad y -5.697, nano board 2.5..3.9 below the PCB,
+    model pins on the footprint pads.
   - Old choc/backup leftovers were pruned (in git history at `c19e498`/`70bfd2c`; untracked KiCad backup
     zips are in `../numpad-archive/`).
 - `case/`: case build (`build_case.py`, generated jscad/STL, `viewer.html`, `battery_fit.py`, `board.html` +
@@ -132,6 +147,8 @@ Ergogen output is unrouted.
    - Freerouting 1.4.5 doesn't apply edge clearance to the stab-cutout keepouts, and the first pass of
      the stabfix board left a short, a clearance error and an edge hit (nets R1/R4/R5). Deleting those nets'
      tracks, re-exporting the DSN (the remaining tracks stay fixed) and routing again fixed it.
+   - It also ignores **no-net pads**: on the nano-shift board it ran RAW over a PWR1 mounting pad (a short).
+     Same fix: delete RAW's tracks, lock the rest, re-export and route again.
 3. Import the session (`pcbnew.ImportSpecctraSES(board, "x.ses")`), set
    `GetDesignSettings().m_CopperEdgeClearance = FromMM(0.2)`, then save.
 4. DRC: `kicad-cli pcb drc --severity-error --severity-warning -o x.rpt board.kicad_pcb`.
@@ -185,8 +202,9 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
     because it's stronger: the thread grips the pillar, not 1.5mm of plate. The underside of the case shows
     **no holes**.
     - Path: a 90° countersink in the plate top (r 2.0 → 1.1), so the head sits flush under the keycaps.
-      Then r=1.1 clearance through the plate boss and PCB, then a **blind r=0.8 pilot in the pillar**,
-      stopping 0.8 above the floor bottom.
+      Then r=1.1 clearance through the plate boss and PCB, then an **r=0.8 pilot down the full pillar**,
+      cut flat at the floor top (world z = `FLOOR_T` = 1.0; user, 2026-10-04), so the 1.0 floor stays solid.
+      Screw choice still keeps the tip ≥ `PILOT_EXTRA` (0.5) above the pilot bottom.
     - Every hole is square to the **tilted** board (the pilot is built in the board frame and passed
       through `T()`), so the screw axis matches the plate.
     - `build_case.py` picks the longest standard length per pillar and prints it: currently M2x8 at
@@ -198,7 +216,16 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   bosses, rim, pillars and ledges. Every stab part that reaches into the PCB was verified to fall inside the
   PCB cutouts (point-in-polygon test against `assembly.json` `poly_holes`).
 - **Rear-wall windows:** closed on all four sides (the user does NOT want open-topped slots). Each is part
-  outline + 0.4 per side, in the board frame. USB-C 8.94×3.26 + an outer overmold pocket 0.6 deep; reset
+  outline + 0.4 per side, in the board frame. USB-C 8.94×3.16 (`USB_GAP` 0.25 per side, from the CAD model) at the back of a **cable-head scoop**
+  (`USB_SCOOP` 12.5×6.5 r1.5, user's size 2026-10-04). The user does NOT want a through-hole: the scoop is a
+  recess from the outer face down to a back wall **flush with the USB mouth**. If the mouth is behind the
+  inner wall face, a **collar** (`COLLAR_*`, scoop + 1.2 margin, from the floor to 0.2 below the PCB) is added
+  inside the cavity to make that back wall; with the nano shifted (below) the mouth is inside the wall, so the
+  collar is skipped and the recess is only ~0.5 deep. The shell slides into its window rear-first (like the lever).
+- **Nano shift (2026-10-04, done):** the nano is 1.5 closer to the top edge (KiCad y 13.25 → 11.75): its edge is
+  flush with the PCB edge, the USB mouth 0.96 past it (0.49 behind the outer wall face, 0.26 nano-to-inner-wall).
+  `build_case.py` has a `NANO_SHIFT` preview offset for trying moves in the case before the PCB; keep it **0**.
+  Reset
   plunger; power lever with ±1.65 travel (no nail scoop: the lever pokes ~0.53 past the outer wall). The
   user is fine angling the PCB in past the lever. The reset plunger stays ~1 mm inside the wall (paperclip).
 - **Part dimensions and where they came from** (2026-10-01):
@@ -217,14 +244,27 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
     - **JST PH S2B-PH-K-S**: 5.9×7.6×4.8. Its pins are 3.4 long, so they poke **1.8 through the PCB top**, but
       the plate pocket only allows 1.6: **trim the JST pins**. The mated PHR-2 plug reaches 9.6 from the back
       of the header; the model adds a plug + 3mm wire-bend keep-out on the +x (open) side.
-    - nice!nano: 3.2 total thickness with a mid-mount USB-C (nicekeyboards docs).
+    - **nice!nano v2: from its CAD model** (`C:/Users/Nuggets/AppData/Local/Temp/nice!nano v2.step`, user-supplied
+      2026-10-04; parse with the same entity-walk as the stab STEP plus the NAUO/ITEM_DEFINED_TRANSFORMATION
+      assembly transforms, sampling circle arcs). PCB 17.8×33.2×**1.4**; parts ≤1.1 tall. USB-C is a GCT
+      USB4520-03-0-A mid-mount: shell 8.94×3.16, sticks **0.783 out of the bare (our-PCB-facing) face** and 0.977
+      past the parts face; mouth 4.747 past the first header pin row (0.96 past the nano edge), centred ±0.075.
+      Our mount is components-away (`reverse_mount: false`), so the shell sits 1.72..4.88 below our PCB underside.
+      vs the old guess this moved the USB window 0.77 toward the PCB and the mouth 0.59 inward.
+      **Nano LEDs** (from the STEP, 2026-10-04): two 0603s on the parts face, one on each side of the USB shell,
+      7.4..9.0 in from the nano's USB edge at ±5.1..5.9 off its centreline. On our board that is about KiCad
+      x 116 and 127, y 2.9..4.5. They face **down at the case floor** (~2.1 air gap) about 9 from the outer rear
+      wall, directly behind the edges of the USB scoop. One is the hardware charge LED and the other is the
+      blue user LED on P0.15. Discussed as a light-pipe alternative to `battery_led`; not adopted.
+    - Rejected nano models: `bstiq/nice-nano-kicad` `sparkfun_pro_micro.x3d` (Pro Micro / micro-USB stand-in);
+      `Downloads/nice nano prototype.stl` (220-triangle block model, 8.0-wide shell, wrong).
   - Still estimated:
     - Gateron LP hotswap socket (KS-2P02B01-**02**) height 1.85. Its spec PDF URL is dead (404).
       Supporting evidence: the user linked the MX-profile sibling KS-2P02B01-**01**
       (gateron.com/u_file/2506/10/file/GATERONUpgradeHot-swapPCB20Socket-KS-2P02B01-01-a.pdf). It is
       **1.85±0.05** tall, but it has the MX pin layout (6.35/2.54, Ø3.0 holes) and does **not** fit the KS-33
       footprint. The KS-33 needs the -02 low-profile socket.
-    - nice!nano PCB 1.0 and header gap 2.5; keycap height.
+    - nice!nano header gap 2.5 (standard spacer, but solder seating varies); keycap height.
 - **Battery:** `case/battery_fit.py [floor_pocket_depth]` searches where LiPo pouch cells fit under the
   tilted PCB, using assembly.json. Re-run it after any change.
   - Results: 301230 (30×12×3, ~110mAh, nice!nano's recommended cell) and 401230 (×4, ~150mAh) fit at
@@ -264,13 +304,17 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 
 - No schematic needed — `config.yaml` is the netlist source of truth (verified: 0 unconnected, DRC clean).
 - Bare board, 2-layer, 1.6mm. Export: `kicad-cli pcb export gerbers --output fab/ board.kicad_pcb` and
-  `kicad-cli pcb export drill --output fab/ board.kicad_pcb`, then zip. Design values (0.25mm track,
-  0.2mm clearance, 0.6/0.3 via) are within any fab's limits.
+  `kicad-cli pcb export drill --output fab/ board.kicad_pcb`, then zip. Design values (0.2mm track on
+  every net, power included; 0.2mm clearance, 0.6/0.3 via) are within any fab's limits.
+- Power path (measured 2026-10-04): JST (128.5,32.5) → BAT_P ~52mm, 1 via → power switch → RAW ~39mm →
+  nano pin 24. About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge current. That
+  was judged fine, so the JST was left where it is.
 
 ## Open items
 
-- If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and re-export `kicad/fab/` (and the PCBWay zip).
+- If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and run `kicad/scripts/export_all.sh`.
 
+- Test-print the rear wall with the user's USB-C cable: cable heads bigger than 12.5×6.5 won't fit the scoop.
 - Before committing to the plate, test-print one stab cutout: the notch depth and neck size are estimates.
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering
   (resolved by the user's choice; see Case → Socket model).

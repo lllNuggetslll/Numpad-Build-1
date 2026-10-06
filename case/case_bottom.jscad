@@ -8,11 +8,11 @@ function T(o) { return o.translate([0, -Y_PIVOT, 0]).rotateX(TILT).translate([0,
 function rrect(c, r, rr) { return CAG.roundedRectangle({ center: c, radius: r, roundradius: rr, resolution: 32 }); }
 
 function main() {
-    var floorT = 1.0, plateTop = 3.8000000000000003, gap = 0.4;
+    var floorT = 1.0, plateTop = 3.8000000000000003, gap = 0.4, usbGap = 0.25, scoop = [12.5, 6.5, 1.5], collar = null, usbMouth = 5.697;
     var cx = 128.5, cy = -52.5, OUT = [79.4, 117.4, 1.7], INN = [77.0, 115.0, 0.5];
     var yRearIn = 5.0, yRear = 6.2;
-    var posts = [[147.5, -14.5], [109.5, -33.5], [128.5, -90.5], [128.5, -52.5], [147.5, -71.5]], postR = 3.0, pilotR = 0.8, pilotD = [4.7, 4.7, 2.7, 4.7, 2.7], ledges = [[90.0, -110.0, 100.0, -108.4], [90.0, -110.0, 91.6, -100.0], [90.0, 3.4, 100.0, 5.0], [90.0, -5.0, 91.6, 5.0], [157.0, -110.0, 167.0, -108.4], [165.4, -110.0, 167.0, -100.0], [157.0, 3.4, 167.0, 5.0], [165.4, -5.0, 167.0, 5.0]];
-    var cuts = {"rst": [137.2, 0.85, 2.6, 1.0], "pwr": [148.5, 0.65, 2.8, 1.1], "usb": [121.567, 4.07, 8.94, 3.26]};   // [x, depth-centre below PCB, w, h] in board frame
+    var posts = [[128.5, -52.5], [147.5, -71.5], [128.5, -90.5], [147.5, -14.5], [109.5, -33.5]], postR = 3.0, pilotR = 0.8, pilotD = [4.74, 3.95, 3.16, 6.31, 5.52], ledges = [[90.0, -110.0, 100.0, -108.4], [90.0, -110.0, 91.6, -100.0], [90.0, 3.4, 100.0, 5.0], [90.0, -5.0, 91.6, 5.0], [157.0, -110.0, 167.0, -108.4], [165.4, -110.0, 167.0, -100.0], [157.0, 3.4, 167.0, 5.0], [165.4, -5.0, 167.0, 5.0]];
+    var cuts = {"usb": [121.44, 3.297, 8.94, 3.16], "pwr": [148.5, 0.65, 2.8, 1.1], "rst": [137.2, 0.85, 2.6, 1.0]};   // [x, depth-centre below PCB, w, h] in board frame
     var batt = [98.5, -27.5, 110.5, 2.5], wire = [102.5, -34.0, 106.5, -27.5], battD = 0.5, battGap = 0.5;
     var outer = rrect([cx, cy], [OUT[0] / 2, OUT[1] / 2], OUT[2]);
     var inner = rrect([cx, cy], [INN[0] / 2, INN[1] / 2], INN[2]);
@@ -36,21 +36,26 @@ function main() {
         sup = sup.union(CSG.cube({ corner1: [L[0], L[1], 0], corner2: [L[2], L[3], 30] }));
     }
     tray = tray.union(sup.intersect(belowPcb).intersect(cavity));
+    // collar around the USB port inside the rear wall, so the scoop has a back wall flush with the USB mouth
+    if (collar) tray = tray.union(T(CSG.cube({ corner1: [collar[0], collar[1], -big], corner2: [collar[2], collar[3], collar[4]] })).intersect(cavity));
     for (var j = 0; j < posts.length; j++) {
-        // blind pilot square to the tilted board (matches the screw axis); the floor stays closed
-        tray = tray.subtract(T(CSG.cylinder({ start: [posts[j][0], posts[j][1], 1], end: [posts[j][0], posts[j][1], -pilotD[j]], radius: pilotR, resolution: 24 })));
+        // pilot square to the tilted board (matches the screw axis), down the whole pillar and cut
+        // flat at the floor top, so the floor stays closed
+        var pilot = T(CSG.cylinder({ start: [posts[j][0], posts[j][1], 1], end: [posts[j][0], posts[j][1], -pilotD[j] - 1], radius: pilotR, resolution: 24 }));
+        tray = tray.subtract(pilot.intersect(CSG.cube({ corner1: [posts[j][0] - 5, posts[j][1] - 5, floorT], corner2: [posts[j][0] + 5, posts[j][1] + 5, plateTop + 20] })));
     }
 
     // rear-wall windows: part outline + gap, in the board frame, then tilted with the board
     function wallSlab(prof, y0, y1) {   // profile drawn in (x, z) -> slab spanning y0..y1
         return prof.extrude({ offset: [0, 0, y1 - y0] }).rotateX(90).translate([0, y1, 0]);
     }
-    function win(c, rr, y0, y1) {
-        return T(wallSlab(rrect([c[0], -c[1]], [c[2] / 2 + gap, c[3] / 2 + gap], rr), y0, y1));
+    function win(c, rr, y0, y1, g) {
+        if (g === undefined) g = gap;
+        return T(wallSlab(rrect([c[0], -c[1]], [c[2] / 2 + g, c[3] / 2 + g], rr), y0, y1));
     }
-    tray = tray.subtract(win(cuts.usb, 1.2, yRearIn - 1, yRear + 1));
-    // outer pocket so a USB-C plug overmold (~12 x 6.5) gets close enough to seat
-    tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [6.4, 3.4], 2.0), yRear - 0.6, yRear + 1)));
+    tray = tray.subtract(win(cuts.usb, 1.2, (collar ? collar[1] : yRearIn) - 1, yRear + 1, usbGap));
+    // cable-head scoop: recess from the outer face down to the USB mouth plane (flush with the port)
+    tray = tray.subtract(T(wallSlab(rrect([cuts.usb[0], -cuts.usb[1]], [scoop[0] / 2, scoop[1] / 2], scoop[2]), usbMouth, yRear + 1)));
     tray = tray.subtract(win(cuts.rst, 0.6, yRearIn - 1, yRear + 1));
     tray = tray.subtract(win(cuts.pwr, 0.6, yRearIn - 1, yRear + 1));
     // battery pocket in the floor (cell + gap), plus a notch for its lead toward the JST
