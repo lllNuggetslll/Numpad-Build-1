@@ -15,7 +15,7 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 | 1 | Reset button | **Panasonic EVQ-PUA02K** (or EVQ-PUC02K / EVQ-PUL02K) | Side-push SMD, 4.7 × 3.5 mm. PUA02K is the easy-to-find one; it has no locating pegs, so the two small holes stay empty. Not EVQ-PUD02K (3.2 mm deep). |
 | 1 | Power switch | **MSK-12C02-style side slide switch, H = 2.5 mm** (7-pin SMD, 6.65 × 2.7 × 1.4 body, 1.5 mm pin pitch) | Must be the **2.5 mm lever** version, so it sticks ~0.5 mm out of the case. The 1.5/2.0 versions (and the Alps SSSS811101) fit the pads but end inside the wall. |
 | 1 | Battery connector | **JST PH S2B-PH-K-S** | 2-pin, 2.0 mm, side entry, through-hole. |
-| 1 | Low-battery LED | **Lite-On LTST-C191KRKT** (0603, red, 0.55 mm tall) | Any 0603 LED up to ~1.4 mm tall fits. |
+| 1 | Low-battery LED | **Lite-On LTST-C191KRKT** (0603, red, 0.55 mm tall) | Any 0603 LED up to ~1.7 mm tall fits. |
 | 1 | LED resistor | 1 kΩ, 0603 | |
 | 1 | Battery | **301230 LiPo**, 3.7 V, ~110 mAh, 3 × 12 × 30 mm, with protection circuit and a **JST PH 2.0** plug | The case has a pocket sized for this cell. **Check the plug polarity** before connecting it (see the README). |
 
@@ -26,7 +26,7 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 | 21 | Switches | **Gateron KS-33 Low Profile 2.0** (e.g. Brown, KS-33E10B055NN-Y24) | Any KS-33 variant. Sold in packs of 35/70/110. |
 | 3 | Stabilizers | **Gateron Low Profile Plate-Mounted Stabilizer 2U, KS-57B210T** | For the "0", "+" and "Enter" keys. |
 | 18 | Keycaps, 1u | Low-profile keycaps for Gateron LP / KS-33 switches, **18 mm** | Standard-height MX keycaps are too tall for this build. |
-| 1 | Keycap, 2u horizontal | Same profile, 2u wide (37 × 18 mm) | "0" key. |
+| 1 | Keycap, 2u horizontal | Same profile, 2u wide (37 × 18 mm) | "0" key. Its stabilizer mounts must sit **24 mm apart** (12 mm each side of the centre), to match the KS-57 stabilizers. Same for the two vertical 2u caps. |
 | 2 | Keycaps, 2u vertical | Same profile, 2u tall (18 × 37 mm) | "+" and "Enter". |
 
 ## Case and hardware

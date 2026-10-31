@@ -39,7 +39,7 @@ KEYCAP = 18.0              # 1u keycap; 2u = 2 * PITCH - 1
 # ---- plate ----
 PCB_T = 1.6
 PLATE_T = 1.2              # Gateron LP stabilizers are specced for a 1.2 plate
-PLATE_TOP = PCB_T + 2.2    # plate top above the PCB underside (Gateron LP: 2.2 above PCB top)
+PLATE_TOP = PCB_T + 2.5    # plate top above the PCB underside (KS-33 drawing: flange underside 2.50 above its seat)
 PLATE_TOL = 0.2            # plate edge to tray wall, per side
 SW_CUT = 14.0              # switch cutout
 PIN_RELIEF = 0.5           # clearance around THT pins poking up through the PCB
@@ -48,11 +48,15 @@ SPACER_R = 2.15            # spacer bosses around the screw holes (M2 spacer siz
 RIM_W = 1.2                # support rim along the plate edge, underneath
 # Gateron LP plate-mount stabilizer KS-57B210T: housings 24.00 apart, plate cutout 6.00 x 12.50
 # with a 1.70 notch, joined to the switch hole by a neck (Gateron "suggested mounting" drawing).
+# That figure is to scale (its 14 switch hole is square, the wing measures 5.99 x 12.45); the undimensioned
+# offsets below are read off it. Stem-centred frame, bar on the -y side:
 STAB_DX, STAB_W, STAB_H = 12.0, 6.0, 12.5
-STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H = 1.7, 1.0, 2.0
-# From the KS-57B210T STEP, in a stem-centred frame with the bar on the -y side:
-STAB_CUT_Y = -0.25           # plate cutout spans y -6.5..+6.0 (clip hooks under the plate at -6.5);
-                             # the notch is on the +y end, away from the bar
+STAB_CUT_Y = -0.595          # wing spans y -6.845..+5.655, centred 0.6 toward the bar
+STAB_NOTCH_W, STAB_NOTCH_D = 1.7, 1.15   # notch on the bar end, reaching the bar line (-7.975)
+STAB_NECK_H, STAB_NECK_Y = 2.5, -1.39    # neck y -2.64..-0.14, on the bar side of the switch centre
+# Checked against the STEP housings with gmsh booleans (2026-10-05): this cutout clears the clip legs
+# (y -6.80) and its +y edge is where the latch tab catches (5.63..5.70). The old cutout (-6.5..+6.0, notch
+# on the far end) cut 0.3 into both clip legs and left the latch nothing to catch.
 STAB_HOUSING = (2.93, -9.70, 5.13, 4.45)   # below the plate: half-width, y range, depth below plate top
 STAB_FLANGE = (3.0, -7.90, 7.23, 1.2)      # on top of the plate
 STAB_BAR = (-7.975, 0.5, 0.725)            # bar y, radius, centre depth below the plate underside
@@ -160,14 +164,16 @@ for f in b.GetFootprints():
     top = -PCB_T
     if "switch_gateron" in fid:
         switches.append([x, -y])
-        # Gateron KS-33 (spec KS-33E10B055NN-Y24): 14.0 body through the plate, 14.7 flange on the
-        # plate top, 13.75 upper housing, 5.75 from the PCB top to the stem top
+        # Gateron KS-33 drawing (KS-33E10B055NN-Y24, heights from its seat on the PCB top): 14.0 body
+        # through the plate, 14.7 flange whose underside is 2.50 up, 13.75 upper housing to 5.85, stem
+        # (12.15 overall) to 8.90; the Ø5.05 centre post reaches 5.75 below the flange = 3.25 below the seat
         pt = top - (PLATE_TOP - PCB_T)            # plate top, as a depth
         box(ref, "switch", x - 7.0, y - 7.0, x + 7.0, y + 7.0, top, pt)
         box(ref + "_flange", "switch", x - 7.35, y - 7.35, x + 7.35, y + 7.35, pt, pt - 1.0)
-        box(ref + "_top", "switch", x - 6.875, y - 6.875, x + 6.875, y + 6.875, pt - 1.0, top - 4.55)
-        box(ref + "_stem", "stem", x - 2.0, y - 0.55, x + 2.0, y + 0.55, top - 4.55, top - 5.75)
-        box(ref + "_stem2", "stem", x - 0.55, y - 2.0, x + 0.55, y + 2.0, top - 4.55, top - 5.75)
+        box(ref + "_top", "switch", x - 6.875, y - 6.875, x + 6.875, y + 6.875, pt - 1.0, top - 5.85)
+        box(ref + "_stem", "stem", x - 2.0, y - 0.55, x + 2.0, y + 0.55, top - 5.85, top - 8.90)
+        box(ref + "_stem2", "stem", x - 0.55, y - 2.0, x + 0.55, y + 2.0, top - 5.85, top - 8.90)
+        box(ref + "_post", "switchpost", x - 2.525, y - 2.525, x + 2.525, y + 2.525, 0, 3.25 - PCB_T)
         # hotswap socket from the official footprint, rotated with the switch (KiCad: +deg = CCW on screen)
         o = math.radians(f.GetOrientationDegrees()); co, so = math.cos(o), math.sin(o)
         def xf(r):
@@ -182,7 +188,8 @@ for f in b.GetFootprints():
                 r = (r[0] + SOCKET_TAB0_TRIM_2U, r[1], r[2], r[3])
             box("%s_tab%d" % (ref, i), "sockettab", *xf(r), 0, SOCKET_TAB_H)
         kw = KEYCAP + (PITCH if rot == 0 else 0); kh = KEYCAP + (PITCH if rot == 90 else 0)
-        box(ref + "_cap", "keycap", x - kw / 2, y - kh / 2, x + kw / 2, y + kh / 2, top - 5.0, top - 8.0)
+        # keycap (estimated 3.0 thick) rests 3.0 of travel above the upper housing
+        box(ref + "_cap", "keycap", x - kw / 2, y - kh / 2, x + kw / 2, y + kh / 2, top - 8.85, top - 11.85)
         if rot is not None:
             # bar points inward, toward the board centre (the PCB slot for it is cut that way)
             ex, ey = x, -y                                           # ergogen frame
@@ -504,17 +511,17 @@ function main() {
     var sw = %s, swCut = %s, stabs = %s, holes = %s, screwR = %s, cskR = %s, spacerR = %s, reliefs = %s;
     var lights = %s, lightR = %s;
     var plateT = %s, plateBot = %s, pcbTop = %s, rimW = %s, skin = %s;
-    var S = { dx: %s, w: %s, h: %s, notchW: %s, notchD: %s, neckH: %s, cy: %s };
+    var S = { dx: %s, w: %s, h: %s, notchW: %s, notchD: %s, neckH: %s, neckY: %s, cy: %s };
     var outline = rrect([cx, cy], [pw / 2, ph / 2], pr);
 
     // stabilizer cutout for a 2u key centred at the origin, in the stab frame: bar on the -y side,
-    // wings offset S.cy toward it, notch on the +y end (rotated so -y points at the bar)
+    // wings offset S.cy toward it, notch on the bar (-y) end, neck at S.neckY (rotated so -y points at the bar)
     function stabCut() {
         var c = null;
         for (var sgn = -1; sgn <= 1; sgn += 2) {
             var wing = CAG.rectangle({ center: [sgn * S.dx, S.cy], radius: [S.w / 2, S.h / 2] })
-                .union(CAG.rectangle({ center: [sgn * S.dx, S.cy + S.h / 2 + S.notchD / 2 - 0.01], radius: [S.notchW / 2, S.notchD / 2] }))
-                .union(CAG.rectangle({ corner1: [Math.min(sgn * S.dx, 0), S.cy - S.neckH / 2], corner2: [Math.max(sgn * S.dx, 0), S.cy + S.neckH / 2] }));
+                .union(CAG.rectangle({ center: [sgn * S.dx, S.cy - S.h / 2 - S.notchD / 2 + 0.01], radius: [S.notchW / 2, S.notchD / 2] }))
+                .union(CAG.rectangle({ corner1: [Math.min(sgn * S.dx, 0), S.neckY - S.neckH / 2], corner2: [Math.max(sgn * S.dx, 0), S.neckY + S.neckH / 2] }));
             c = c ? c.union(wing) : wing;
         }
         return c;
@@ -569,7 +576,7 @@ function main() {
        round(CX, 3), round(CY, 3), round(pw, 3), round(ph, 3), round(pr, 3),
        J([r3(s) for s in switches]), SW_CUT, J([r3(s) for s in stabs]), J([r3(p) for p in POSTS]),
        SCREW_R, CSK_R, SPACER_R, J([r3(r) for r in reliefs]), J([r3(l) for l in lights]), LED_HOLE_R, PLATE_T, round(PLATE_TOP - PLATE_T, 3), PCB_T, RIM_W, PLATE_SKIN,
-       STAB_DX, STAB_W, STAB_H, STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H, STAB_CUT_Y)
+       STAB_DX, STAB_W, STAB_H, STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H, STAB_NECK_Y, STAB_CUT_Y)
 
 open(os.path.join(HERE, "case_bottom.jscad"), "w").write(bottom)
 open(os.path.join(HERE, "case_plate.jscad"), "w").write(plate)

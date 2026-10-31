@@ -21,8 +21,9 @@ from the board itself, so the two always match.
 | Case and plate | `case/case_bottom.stl`, `case/case_plate.stl` |
 | Firmware | Not written yet. ZMK needs a board definition using the pin map below. |
 
-Before printing the whole plate, **test-print one stabilizer cutout**. Its notch depth and neck size come from a
-drawing that isn't to scale.
+Before printing the whole plate, **test-print one stabilizer cutout**. It follows Gateron's suggested mounting
+drawing and was checked against the stabilizer's 3D model, but 3D-printed holes usually come out a little
+small. The stabilizer should hook in at the wire end, then snap down at the other end and sit flat.
 
 ## Shopping list
 
@@ -71,7 +72,7 @@ low-battery LED, which is on the front.
    button, the power switch, and the 1 kΩ resistor.
 3. **Front side:** solder the 0603 LED. It sits under a hole in the plate between the keycaps.
 4. **Battery connector:** solder the JST PH on the back, then **trim its pins flush** on the front. They're
-   3.4 mm long and the plate only leaves 1.6 mm above the PCB.
+   3.4 mm long and poke 1.8 mm through; the plate only leaves 1.9 mm above the PCB.
 5. **nice!nano:** the controller mounts on the back, components facing **away** from the PCB, on standard
    male header pins with 2.5 mm plastic spacers.
    - Fit pins **only** where the PCB has holes: 16 pins (RAW, RST, GND ×2, P0, P1, P4–P8, P14–P16, P18,

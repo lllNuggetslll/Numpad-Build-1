@@ -44,7 +44,7 @@ const groups={batt:new THREE.Group(),caps:new THREE.Group(),case:new THREE.Group
 const tiltOuter=new THREE.Group(),tiltInner=new THREE.Group();tiltOuter.add(tiltInner);sc.add(tiltOuter);sc.add(groups.case);sc.add(groups.batt);
 ['caps','plate','pcb','top','bot'].forEach(k=>tiltInner.add(groups[k]));
 function stlGeom(b){const dv=new DataView(b),n=dv.getUint32(80,true),p=new Float32Array(n*9);for(let i=0;i<n;i++)for(let k=0;k<9;k++)p[i*9+k]=dv.getFloat32(84+i*50+12+k*4,true);const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.computeVertexNormals();return g;}
-const colors={battery:0xd04a8a,sockettab:0xb0b0b0,plug:0x8a7a50,keycap:0xf2efe6,stab:0x222222,switch:0x9a9a9a,stem:0xc04040,socket:0x333333,diode:0x222222,nano:0x1d4f91,nano_parts:0x444444,usb:0xe0a030,header:0x111111,part:0x555555,actuator:0xe0a030};
+const colors={battery:0xd04a8a,sockettab:0xb0b0b0,plug:0x8a7a50,keycap:0xf2efe6,stab:0x222222,switch:0x9a9a9a,switchpost:0x9a9a9a,stem:0xc04040,socket:0x333333,diode:0x222222,nano:0x1d4f91,nano_parts:0x444444,usb:0xe0a030,header:0x111111,part:0x555555,actuator:0xe0a030};
 const bust='?t='+Date.now();
 Promise.all([fetch('case_bottom.stl'+bust).then(x=>x.arrayBuffer()),fetch('case_plate.stl'+bust).then(x=>x.arrayBuffer()),fetch('assembly.json'+bust).then(x=>x.json())]).then(([b,pb,a])=>{
  groups.case.add(new THREE.Mesh(stlGeom(b),caseMat));

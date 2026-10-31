@@ -29,11 +29,32 @@ Gateron low-profile **hotswap** switches. Generated with ergogen; routed with fr
     stabilizer..stp`. It holds 5 solids in one frame: 2 housings, 2 actuators, the wire. Parse it with a small
     python script that walks the entity references from each MANIFOLD_SOLID_BREP down to its VERTEX_POINTs.
     Values below use a stem-centred frame with the bar on the -y side.
-    - Housings 24.00 apart; 6.0 wide. Plate cutout 12.5 long, spanning y -6.5..+6.0 (the clip hooks catch the
-      plate underside at -6.5). The 1.7 notch is on the **+y end, away from the bar**.
+    - Housings 24.00 apart; 6.00 wide at their crush ribs. **How it mounts** (STEP, 2026-10-05): at the bar
+      end a tongue runs under the plate (top at z 4.55, out to y -9.7) and two clip legs pass through the plate
+      out to y -6.80; at the far end a 1.66-wide latch tab catches the plate underside out to y +5.70. The flange
+      ends sit at z 5.65, 0.1 below the nominal plate top, so a 1.2 plate is clamped with 0.1 preload. So you
+      hook the bar end under the plate and snap the far end down.
+    - **Plate cutout = Gateron's suggested mounting** (since 2026-10-05): wing y -6.845..+5.655, notch 1.7 × 1.15
+      on the **bar end** (out to the bar line), neck 2.5 tall at y -2.64..-0.14. The figure is to scale; the
+      offsets are read off it. gmsh booleans of the STEP solids vs this plate: only the 0.1 flange-clamp and a
+      0.05 latch overlap. The old cutout (-6.5..+6.0, 1.0 notch on the far end, neck centred at -0.25) cut 0.3
+      into both clip legs and left the latch 0.3 short of the plate edge. Its "not-to-scale drawing" assumption
+      and the notch side were wrong. Script: gmsh 4.15 (`pip download gmsh`, unzip the wheel's
+      `gmsh-4.15.dll` next to `gmsh.py`); `occ.importShapes` the STEP, plate = box minus cutout,
+      `occ.intersect` per solid, `getMass` = overlap volume.
     - Housing below the plate: x ±2.93, **y -9.70..+5.13**, down to 4.45 below the plate top.
-    - **Wire bar:** r 0.5 at y -7.975. Its centre sits 0.725 below the plate underside, so with our 1.0
-      plate-PCB gap it hangs **0.225 into the PCB**.
+    - **Wire bar:** r 0.5 at y -7.975. Its centre sits 0.725 below the plate underside, so with our 1.3
+      plate-PCB gap its bottom clears the PCB top by 0.075 (the PCB bar slot is now just margin).
+  - **Gateron drawing** (the spec PDF's last page, vector; render with pymupdf; the user's copy is
+    `C:/Users/Nuggets/Downloads/GATERONLowProfilePlateMountedStabilizer2U-KS-57B210T.pdf`), checked 2026-10-05: housings
+    24.00±0.15 apart; flange 1.20 thick; housing 4.05 above / 4.45 below the plate top (= STEP z 1.3..9.8, so
+    **STEP plate top = z 5.75**, stab centre x 60); plate 1.20±0.1; clip span 12.40. Suggested plate cutout
+    6.00 × 12.50 with a 1.70 notch (now followed exactly, see below). Actuator top **7.70**
+    above the plate top in section A-A (the STEP's actuators sit 0.4 lower, at 7.30). The switch stem is 6.40
+    above the plate, so the free actuator reaches the keycap; whether it follows the full 3.0 down isn't drawn
+    → test-fit. 2u keycaps need stab mounts 24 apart.
+  - With the 2.5 plate (2026-10-05) the housings hang 0.35 below the PCB underside, 0.30 inside every PCB
+    cutout edge (point-in-polygon re-check on `assembly.json`); the bar no longer enters the PCB.
   - **PCB cutout per 2u key** (`_stab_holes` → `_pcb_outline`):
     - Two housing holes 6.5×15.45, offset 2.275 toward the bar, joined by a 1.6-wide bar slot at 7.975.
     - **Bars point inward** (toward the board centre). Outward, the housing holes break the PCB edge and the
@@ -45,8 +66,8 @@ Gateron low-profile **hotswap** switches. Generated with ergogen; routed with fr
     key's bar); front-right → (147.5, 71.5) (one row back). See the case section.
 - **Low-battery LED (the one exception to "everything on B"):** `battery_led` is a 0603 LED on the
   **front** at the keycap-gap crossing "E" (KiCad 128.5, 71.5; between c2/c3 and r4/r5). The plate has a
-  3.8×2.0 counterbore (blind pocket from below, 0.6 deep) over it, which leaves 1.6 of room, so any 0603
-  LED up to ~1.4 tall fits. Planned part: Lite-On LTST-C191KRKT (red, 0.55). There is a Ø1.8 through hole
+  3.8×2.0 counterbore (blind pocket from below, 0.6 deep) over it, which leaves 1.9 of room, so any 0603
+  LED up to ~1.7 tall fits. Planned part: Lite-On LTST-C191KRKT (red, 0.55). There is a Ø1.8 through hole
   in the middle (`LED_HOLE_R`, `LED_POCKET`). Its 1k resistor `battery_led_resistor` sits on B directly under
   it. Circuit: P0 → R → LED_A → LED → GND. Both use `footprints/custom/smd_0603.js`.
   - Other free crossings, each with ≥3.17mm to the nearest pad: (109.5,14.5), (147.5,33.5), (109.5,52.5),
@@ -180,24 +201,35 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   Then render both jscad files with `@jscad/cli@1`. **Don't hand-edit the .jscad files.**
 - **Geometry:** flat floor (1.0). PCB **tilted 2.37° (rear up), parallel to the sloped top edge**, pivoting
   about the PCB rear edge. `Z_REAR` is auto-computed so the lowest part clears the floor by 0.5. That gives
-  PCB underside z = 8.0 at the rear and 3.27 at the front. Wall tops end flush with the plate top
-  (rear 11.86, front 7.0).
+  PCB underside z = 8.1 at the rear and 3.37 at the front. Wall tops end flush with the plate top
+  (rear 12.26, front 7.40).
 - **Supports:** each screw pillar gets its own height, cut by the tilted PCB-underside plane. There are also
   L-shaped **corner ledges** (1.6 wide, 10mm arms). Supports are intersected with the cavity, so they
   never poke through the walls.
-- **Plate:** 1.2mm, top 2.2mm above the PCB top. It is inset inside the walls (0.2 per side).
-  - Cutouts: 14×14 switch holes; Gateron LP stab cutouts (wings 6.0×12.5 offset 0.25 toward the bar,
-    1.7×1.0 notch on the side away from the bar, 2.0 neck). Each stab is rotated so its bar points
-    inward (`stabs` rot 180 for the "0" key, 270 for the tall keys). The neck height comes from a
-    not-to-scale drawing.
+- **Plate:** 1.2mm, top **2.5mm** above the PCB top (the KS-33 flange height; was 2.2 until 2026-10-05,
+  which would have held every switch 0.3 off the PCB). It is inset inside the walls (0.2 per side).
+  - Cutouts: 14×14 switch holes; Gateron LP stab cutouts per Gateron's suggested mounting (wings 6.0×12.5
+    offset 0.595 toward the bar, 1.7×1.15 notch on the bar end, 2.5 neck at y -1.39; see Stabilizers). Each
+    stab is rotated so its bar points inward (`stabs` rot 180 for the "0" key, 270 for the tall keys).
   - M2 holes. THT pins poking up through the PCB (nano headers, JST, reset/power pegs) get **blind pockets
     from below**: pad + 0.5, 0.6 deep, leaving a 0.6 skin, so the plate top stays closed. The user wants the
-    components covered, not open holes. That leaves 1.6 above the PCB top for pins, so trim headers to ~1.4.
+    components covered, not open holes. That leaves 1.9 above the PCB top for pins, so trim headers to ~1.4.
 - **Switch:** Gateron KS-33 (spec gateron.com/u_file/2311/10/file/GATERONKS-33LowProfile20BrownSwitch
   BlackBottomHousingKS-33E10B055NN-Y24.pdf).
-  - Plate cutout 14.00, plate 1.20, plate underside 1.00 above the PCB top.
-  - 14.7 flange, 13.75 upper housing, 5.75 from the PCB top to the stem top; pins 2.60 below the PCB top;
-    3.0 total travel.
+  - Re-read 2026-10-05 from the drawing on the PDF's last page (render it with pymupdf; the user's
+    seller image of the same drawing lacks the front view). Heights from the switch's seat on the PCB top:
+    - Plate cutout 14.00 (+0.05/-0.02), plate 1.20. **Flange underside (plate top) 2.50 up**, so the plate
+      underside is 1.30 above the PCB top. (The old "5.75 to the stem top" was a misread: 5.75 runs from the
+      flange underside *down* to the centre-post tip.)
+    - 14.7 flange, 13.75 upper housing with its top at 5.85; stem top at 8.90 (12.15 overall − 3.25 post).
+    - Below the seat: Ø5.05 centre post 3.25 (1.65 past our 1.6 PCB, modelled as `_post`), pins 2.60.
+    - Travel 3.0 ±0.2, pre-travel 1.7 ±0.4.
+    - Confirmed 2026-10-05 by the user's Banana/Yellow LP 2.0 spec (`Downloads/GATERONKS-33LowProfile20Banana
+      Switch-KS-33-014KS-33Y10B060NN-D137.pdf`, drawing on its last page, vector with no text layer). Its body
+      drawing is identical to the Brown one, and its front view dimensions **12.15 from stem top to post tip**
+      directly (stem top = 12.15 − 5.75 + 2.50 = 8.90 above the seat). Only the force differs (60 ±15 gf).
+      Gateron's PCB layout there asks for a **Ø5.25** centre hole and Ø3.00 socket holes; ours drills Ø5.1
+      (plated) — open question for the user.
   - **Screws go in from the top:** M2 countersunk (bevel-head) self-tapping screws. The user chose this
     because it's stronger: the thread grips the pillar, not 1.5mm of plate. The underside of the case shows
     **no holes**.
@@ -209,8 +241,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       through `T()`), so the screw axis matches the plate.
     - `build_case.py` picks the longest standard length per pillar and prints it: currently M2x8 at
       (109.5,-33.5), (147.5,-14.5) and (128.5,-52.5); M2x6 at (147.5,-71.5) and (128.5,-90.5), where the
-      pillars are 4.1–4.9 tall, giving 2.2mm of thread.
-  - **Underneath:** a 1.2-wide edge rim and r=2.15 spacer bosses at the screws. Both fill the 1.0 gap down
+      pillars are 4.1–4.9 tall, giving 1.9mm of thread (3.9 on the M2x8s).
+  - **Underneath:** a 1.2-wide edge rim and r=2.15 spacer bosses at the screws. Both fill the 1.3 gap down
     to the PCB top, so no loose spacers are needed. Print the plate upside down.
 - **Stabs in the assembly model** (from the STEP): housing, flange and bar boxes, checked against the spacer
   bosses, rim, pillars and ledges. Every stab part that reaches into the PCB was verified to fall inside the
@@ -241,8 +273,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       footprint (pads mirrored on B), so no PCB change. 6.65×2.7×1.4 body. Actuator 1.3 wide, 1.1 thick
       (centre 0.65 off the board), sticks out **2.5 from the body face**, **1.5 travel** (the window covers the
       2.8 sweep + 0.4 per side). Lever tip ends 0.53 past the outer rear wall. The 1.5/2.0 variants are too short.
-    - **JST PH S2B-PH-K-S**: 5.9×7.6×4.8. Its pins are 3.4 long, so they poke **1.8 through the PCB top**, but
-      the plate pocket only allows 1.6: **trim the JST pins**. The mated PHR-2 plug reaches 9.6 from the back
+    - **JST PH S2B-PH-K-S**: 5.9×7.6×4.8. Its pins are 3.4 long, so they poke **1.8 through the PCB top**; the
+      plate pocket allows 1.9, so they just fit, but **trim the JST pins** anyway. The mated PHR-2 plug reaches 9.6 from the back
       of the header; the model adds a plug + 3mm wire-bend keep-out on the +x (open) side.
     - **nice!nano v2: from its CAD model** (`C:/Users/Nuggets/AppData/Local/Temp/nice!nano v2.step`, user-supplied
       2026-10-04; parse with the same entity-walk as the stab STEP plus the NAUO/ITEM_DEFINED_TRANSFORMATION
@@ -258,24 +290,29 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       blue user LED on P0.15. Discussed as a light-pipe alternative to `battery_led`; not adopted.
     - Rejected nano models: `bstiq/nice-nano-kicad` `sparkfun_pro_micro.x3d` (Pro Micro / micro-USB stand-in);
       `Downloads/nice nano prototype.stl` (220-triangle block model, 8.0-wide shell, wrong).
+    - **Gateron LP hotswap socket (KS-2P02B01-02): from its drawing** (user-supplied 2026-10-05, a seller
+      image `Desktop/S901b...q.avif`; no part number printed, but the hole pattern is the LP one). Body
+      **1.85±0.05** tall (3.00 incl. the Ø2.90 barrels that go into the Ø3 holes), 11.85 long, 5.40 / 4.35
+      wide. Holes 7.00 apart, 2.42 in from each body end; PCB layout = holes at (∓4.4, 4.7) and (±2.6, 5.75),
+      Ø5.1 centre, i.e. **exactly the ceoloide B-side footprint**. Terminals 1.74 wide, **15.1 tip to tip**
+      (1.63 past each body end), so in footprint x they end at **-8.45 / +6.65**. That is 1.1 shorter per end
+      than the official footprint's B.Fab rects (-9.55 / +7.75) used for `SOCKET_TABS`.
+      (The MX-profile sibling KS-2P02B01-01 has 6.35/2.54 holes and does not fit the KS-33 footprint.)
   - Still estimated:
-    - Gateron LP hotswap socket (KS-2P02B01-**02**) height 1.85. Its spec PDF URL is dead (404).
-      Supporting evidence: the user linked the MX-profile sibling KS-2P02B01-**01**
-      (gateron.com/u_file/2506/10/file/GATERONUpgradeHot-swapPCB20Socket-KS-2P02B01-01-a.pdf). It is
-      **1.85±0.05** tall, but it has the MX pin layout (6.35/2.54, Ø3.0 holes) and does **not** fit the KS-33
-      footprint. The KS-33 needs the -02 low-profile socket.
     - nice!nano header gap 2.5 (standard spacer, but solder seating varies); keycap height.
 - **Battery:** `case/battery_fit.py [floor_pocket_depth]` searches where LiPo pouch cells fit under the
   tilted PCB, using assembly.json. Re-run it after any change.
-  - Results: 301230 (30×12×3, ~110mAh, nice!nano's recommended cell) and 401230 (×4, ~150mAh) fit at
-    **x 130..142, y -26..4** (right of the nano, ending by the JST). 301230 has 1.1 spare; 401230 has 0.1,
-    or 0.7 with a 0.6 floor pocket.
-  - 302030 fits only with a pocket and 0.2 spare (too tight). Anything wider doesn't fit.
+  - Results (2026-10-05, no pocket): 301230 (30×12×3, ~110mAh, nice!nano's recommended cell) and 401230
+    (×4, ~150mAh) fit at **x 130..160, y -10..2**: 301230 with 1.2 spare, 401230 with 0.2.
+  - 302030 fits at x 92..112, y -28..2 with 0.5 spare (tight). Anything wider doesn't fit.
   - **Chosen: 301230** (user, 2026-10-01). `build_case.py` (`BATTERY`, `BATT_*`) searches for the
     best-clearance spot and cuts a **0.5-deep floor pocket** (cell + 0.5 per side), plus a 4×6 lead notch on
     the end facing the JST.
-    - Current spot: x 98.5..110.5, y -27.5..2.5 (left of the nano), 1.72 spare under the S5 socket.
-    - The lead runs about 27mm to the JST, passing under the nano. A 301230's lead is usually 40–50mm.
+    - Current spot (since 2026-10-05): **x 130.5..160.5, y -11..1**, lying across the rear right, under the
+      top switch row, 1.72 spare under the S16/S18 sockets. The lead runs about 28mm from its x 130.5 end to
+      the JST. A 301230's lead is usually 40–50mm.
+    - The previous spot (x 98.5..110.5, y -27.5..2.5, left of the nano) still fits with 1.36 spare. It dropped
+      out when the switch centre posts were added to the model (S4's post is lowest there).
     - The battery is drawn in the viewer as a world-frame box (`assembly.json` `world_boxes`).
 - **Socket model:** the user supplied the official Gateron LP socket KiCad footprint
   ("Gateron_Low_Profile_Socket", KS-2P02B01-02). `SOCKET_BODY`/`SOCKET_TABS` in `build_case.py` come from
@@ -284,6 +321,9 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   - With these real tabs, the PCB underside sits at z 8.1 at the rear and 3.37 at the front.
   - **2u keys (S19/S20/S21): the user hand-sands the pad-1 solder tab** (the one pointing at the stabilizer
     cutout) **1.1mm shorter**, leaving 1.45mm of tab.
+    - **Probably unnecessary (2026-10-05):** the socket drawing puts the real tab tip at 8.45, the same as
+      the trimmed value, so the 1.1 is likely the fab rect's pad margin, not metal. Caliper a real socket
+      (tabs 15.1 tip to tip → skip the sanding) before dropping the step from the README.
     - Untrimmed, that tab hangs over the stab cutout and hits the housing (~0.5mm), and no socket rotation
       avoids it.
     - Trimmed, it ends 8.45 from the switch centre, 0.3 inside the cutout edge (8.75) and clear of the
@@ -314,11 +354,15 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 
 - If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and run `kicad/scripts/export_all.sh`.
 
+- Switch centre hole: Gateron's KS-33 layout says Ø5.25; the footprint drills a plated Ø5.1 for a Ø5.05
+  post, which may come out too tight. Enlarging the drill (pad 5.6 unchanged) needs the user's OK, then a
+  DRC + `export_all.sh`.
 - Test-print the rear wall with the user's USB-C cable: cable heads bigger than 12.5×6.5 won't fit the scoop.
-- Before committing to the plate, test-print one stab cutout: the notch depth and neck size are estimates.
+- Before committing to the plate, test-print one stab cutout (now Gateron's suggested mounting, checked against
+  the STEP; FDM holes print small, and the latch catch is only ~0.05).
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering
   (resolved by the user's choice; see Case → Socket model).
-- Case: verify part heights against real parts (socket height and nano PCB/header gap are still estimates).
+- Case: verify part heights against real parts (the nano header gap is still an estimate; socket height is confirmed at 1.85 by its drawing).
 - ZMK has no built-in low-battery LED. It needs a module or ~50 lines of custom code that blinks P0
   (nRF P0.08) when the battery is low. Blink only; leaving it on drains the battery.
 - The ZMK firmware pin mapping needs updating to match the remap above. (The VCC pin is no longer
