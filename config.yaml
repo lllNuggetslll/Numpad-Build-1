@@ -260,7 +260,7 @@ pcbs:
       main:
         outline: _pcb_outline
     footprints:
-      m2_screws:
+      m2_screws: &fp_m2_screws
         what: ceoloide/mounting_hole_npth
         where: /screw/
         params:
@@ -302,9 +302,9 @@ pcbs:
         adjust:
           rotate: 90
 
-      diodes:
+      diodes: &fp_diodes
         what: ceoloide/diode_tht_sod123
-        where: /key/
+        where: [[/key/, -matrix_c4_r3, -matrix_c4_r5]]
         params:
           from: "{{colrow}}"
           to: "{{row_net}}"
@@ -314,8 +314,16 @@ pcbs:
         adjust:
           shift: [7.1, 1.25]
           rotate: 90
+      diodes_tall:
+        # the tall keys' sockets turn onto the usual +7.1 spot (key_switch_tall rotates 90), so their
+        # diodes go under the switch's left half, between the centre pad and the stab bar slot
+        <<: *fp_diodes
+        where: [matrix_c4_r3, matrix_c4_r5]
+        adjust:
+          shift: [-5.0, 1.25]
+          rotate: 90
 
-      mcu:
+      mcu: &fp_mcu
         # Back side, USB pointing up at the top edge. x is chosen so every used pin
         # clears the hotswap sockets; the 6 unused pins that would overlap switch
         # pads are left out (don't fit header pins there).
@@ -356,7 +364,7 @@ pcbs:
           # +1.5 (2026-10-04): nano edge flush with the PCB edge, USB-C 0.96 past it into the case wall
           shift: [2.44, -6.5 - (2 - board_expand) + 1.5]
 
-      on_off_switch:
+      on_off_switch: &fp_on_off_switch
         # Back side, lever pointing up, 20mm from the right edge
         what: ceoloide/power_switch_smd_side
         where: matrix_c4_r1
@@ -368,7 +376,7 @@ pcbs:
           shift: [-8.5, 9.705 - (2 - board_expand)]
           rotate: 90
 
-      reset_switch:
+      reset_switch: &fp_reset_switch
         # Back side, button pointing up, between the MCU and the power switch
         what: ceoloide/reset_switch_smd_side
         where: matrix_c3_r1
@@ -380,7 +388,7 @@ pcbs:
         adjust:
           shift: [-0.8, u/2 + board_expand - 2.25]
 
-      battery_connector:
+      battery_connector: &fp_battery_connector
         what: ceoloide/battery_connector_jst_ph_2
         where: matrix_c2_r2
         params:
@@ -389,10 +397,12 @@ pcbs:
           BAT_N: GND
           include_courtyard: false
         adjust:
-          shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2 + 1]
+          # 3 toward the front of the c2/c3 r2/r3 crossing (moved 2026-11-07): at +1 its body sat on S15's
+          # hotswap socket. Any further forward and the case would have to grow (floor gap 0.52 here).
+          shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2 - 2]
           rotate: 90
 
-      battery_led:
+      battery_led: &fp_battery_led
         # Low-battery LED, front side, at the keycap-gap crossing between c2/c3 and r4/r5.
         # Any 0603 LED up to ~1.4 tall (planned: Lite-On LTST-C191KRKT, 0.55): the plate has a 0.6 deep
         # counterbore over it (1.6 of room) and a hole so the light comes out between the keycaps.
@@ -406,7 +416,7 @@ pcbs:
         adjust:
           shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2]
 
-      battery_led_resistor:
+      battery_led_resistor: &fp_battery_led_resistor
         # 1k series resistor for the LED, back side, right under it. Driven by spare pin P0.
         what: custom/smd_0603
         where: matrix_c2_r4
@@ -419,7 +429,7 @@ pcbs:
         adjust:
           shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2]
 
-      jlcpcb_order_number_text:
+      jlcpcb_order_number_text: &fp_jlcpcb_order_number_text
         what: ceoloide/utility_text
         where: matrix_c3_r4
         params:
@@ -438,6 +448,87 @@ pcbs:
           text: "'Not about money' v0.1 by ceoloide"
         adjust:
           shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2 + 4]
+
+  # Variant for Gateron KS-33G (Low Profile 3.0, e.g. Silent Red KS-33GJH10B045NW-X5B). Same outline, plate
+  # and parts as not_about_money; only the switches differ: MX pin pattern (MX hotswap sockets), Ø5.0 centre,
+  # Ø1.7 pegs. Every other footprint is the shared &fp_ entry above, so the two boards can't drift apart.
+  numpad_ks33g:
+    template: kicad8
+    outlines:
+      main:
+        outline: _pcb_outline
+    footprints:
+      m2_screws: *fp_m2_screws
+
+      key_switches:
+        # Rotations picked by DRC-testing all four on the unrouted board. 180 (socket toward the front)
+        # keeps the socket clear of the diode at +7.1 and of the reset button.
+        what: custom/switch_mx_ks33g
+        where: [[/key/, -matrix_c1_r6, -matrix_c4_r3, -matrix_c4_r5, -matrix_c2_r1, -matrix_c2_r2]]
+        params: &mx_switch_params
+          side: B
+          reversible: false
+          hotswap: true
+          solder: false
+          include_corner_marks: false
+          from: "{{column_net}}"
+          to: "{{colrow}}"
+        adjust:
+          rotate: 180
+
+      key_switches_mcu:
+        # The two keys under the nice!nano: 270 is the only rotation whose socket clears the kept pins
+        what: custom/switch_mx_ks33g
+        where: [matrix_c2_r1, matrix_c2_r2]
+        params:
+          <<: *mx_switch_params
+        adjust:
+          rotate: 270
+
+      key_switch_0:
+        what: custom/switch_mx_ks33g
+        where: matrix_c1_r6
+        params:
+          <<: *mx_switch_params
+        adjust:
+          rotate: 180
+
+      key_switch_tall:
+        what: custom/switch_mx_ks33g
+        where: [matrix_c4_r3, matrix_c4_r5]
+        params:
+          <<: *mx_switch_params
+        adjust:
+          rotate: 90
+
+      diodes:
+        <<: *fp_diodes
+        where: [[/key/, -matrix_c2_r1, -matrix_c2_r2]]
+      diodes_mcu:
+        # under the nano the sockets turn toward the diode (rotate 270): 0.8 further right for body room
+        <<: *fp_diodes
+        where: [matrix_c2_r1, matrix_c2_r2]
+        adjust:
+          shift: [7.9, 1.25]
+          rotate: 90
+      mcu: *fp_mcu
+      on_off_switch: *fp_on_off_switch
+      reset_switch: *fp_reset_switch
+      battery_connector: *fp_battery_connector
+      battery_led: *fp_battery_led
+      battery_led_resistor: *fp_battery_led_resistor
+      jlcpcb_order_number_text: *fp_jlcpcb_order_number_text
+
+      board_version_text:
+        what: ceoloide/utility_text
+        where: matrix_c3_r2
+        params:
+          side: B
+          mirrored: true
+          text: "'Not about money' v0.1 KS-33G"
+        adjust:
+          shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2 + 4]
+
 cases:
   case_top:
     - what: outline

@@ -3,7 +3,8 @@
 A 21-key low-profile numpad: 4 columns × 6 rows, with three 2u keys ("0", "+", "Enter").
 
 - **Controller:** nice!nano v2, running ZMK over Bluetooth.
-- **Switches:** Gateron KS-33 low-profile switches in hotswap sockets.
+- **Switches:** Gateron KS-33 low-profile switches in hotswap sockets. A second PCB variant takes the
+  newer **KS-33G (Low Profile 3.0)** switches instead (see [KS-33G variant](#ks-33g-variant)).
 - **Battery:** a 301230 LiPo with a low-battery LED.
 - **Case:** a tilted 3D-printed case with a separate switch plate.
 
@@ -18,7 +19,8 @@ from the board itself, so the two always match.
 | Piece | State |
 |---|---|
 | PCB | Routed and DRC-clean. Gerbers are ready in `kicad/fab/numpad-gerbers.zip` (a PCBWay-ready package is `kicad/numpad.kicad_pcb.zip`). |
-| Case and plate | `case/case_bottom.stl`, `case/case_plate.stl` |
+| PCB, KS-33G variant | Routed and DRC-clean: `kicad/fab_ks33g/numpad_ks33g-gerbers.zip`, PCBWay package `kicad/numpad_ks33g.kicad_pcb.zip`. |
+| Case and plate | `case/case_bottom.stl`, `case/case_plate.stl` (the same case fits both boards) |
 | Firmware | Not written yet. ZMK needs a board definition using the pin map below. |
 
 Before printing the whole plate, **test-print one stabilizer cutout**. It follows Gateron's suggested mounting
@@ -35,18 +37,46 @@ See **[SHOPPING_LIST.md](SHOPPING_LIST.md)**.
 |---|---|
 | `config.yaml` | Ergogen source of truth for the PCB: layout, footprints, outline. |
 | `footprints/ceoloide/` | Upstream ceoloide footprints. |
-| `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED and resistor. |
+| `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED and resistor; `switch_mx_ks33g.js` is the KS-33G switch (MX sockets, Ø5.0 centre). |
 | `output/` | **Current board.** `pcbs/not_about_money.kicad_pcb` is routed (DRC report `pcbs/drc.rpt`, preview `routed.svg`); `not_about_money.unrouted.kicad_pcb` is the raw ergogen output. |
-| `kicad/` | KiCad project for the current board (with the project's 0.2 mm edge-clearance rule), `fab/` (gerbers + drill + zip), and the PCBWay package `numpad.kicad_pcb.zip`. |
+| `kicad/` | KiCad project for the current board (with the project's 0.2 mm edge-clearance rule), `fab/` (gerbers + drill + zip), and the PCBWay package `numpad.kicad_pcb.zip`. The KS-33G variant is a second project in the same folder: `numpad_ks33g.kicad_pro`, `fab_ks33g/`, `numpad_ks33g.kicad_pcb.zip`. |
 | `case/build_case.py` | Generates the case from the board: `case_bottom.jscad`, `case_plate.jscad`, `assembly.json`. |
 | `case/viewer.html` | 3D viewer of the case, plate, PCB, parts, keycaps and battery. |
 | `case/battery_fit.py` | Finds where LiPo cells fit under the tilted PCB. |
 | Git history | Earlier design iterations (commit `c19e498` has every old `output_*` folder and config backup). |
 | `CLAUDE.md` | Detailed design notes: coordinates, measurements, decisions, gotchas. |
 
+## KS-33G variant
+
+Gateron's **KS-33G** switches (Low Profile 3.0, e.g. Silent Red KS-33GJH10B045NW-X5B) look like the KS-33 from
+the top: same 14.00 mm plate cutout, same 2.50 mm from the PCB to the plate top, same plate. Underneath they're
+different. They use the **MX pin layout** (Ø1.5 pins), two Ø1.7 plastic pegs, and a **Ø5.0 centre post**, so
+they need MX-style hotswap sockets and a different PCB. Only the switch footprints differ; everything else is the
+same board.
+
+| | KS-33 board (`numpad.kicad_pcb`) | KS-33G board (`numpad_ks33g.kicad_pcb`) |
+|---|---|---|
+| Switch | Gateron KS-33 (Low Profile 2.0) | Gateron KS-33G (Low Profile 3.0) |
+| Hotswap socket | Gateron LP 2.0, KS-2P02B01-**02** | MX-pattern socket: Gateron KS-2P02B01-**01** or Kailh CPG151101S11 |
+| Socket sanding on the 2u keys | yes (step 1 below) | no |
+| Case, plate, stabilizers, nice!nano, firmware pin map | same | same |
+
+- The two sockets under the nice!nano (the top two keys of column 2) are turned a different way from the
+  others so they clear its pins. The diodes next to them sit 0.8 mm further right.
+- **Test-fit one 2u key before buying a full set of switches.** Put a KS-33G, a KS-57 stabilizer and a 2u
+  keycap together and press each end of the key. Both ends should bottom out as firmly as the middle. The
+  stabilizers line up exactly as on the KS-33 board, but the KS-33G travels 3.2 mm (±0.2), and the stabilizer's
+  actuator only has about 3.25 mm before it hits its housing. A long-travel switch could leave the ends of a 2u
+  key stopping ~0.15 mm short.
+- **Measure the MX sockets before you order the board.** The socket body height is an estimate (1.85 mm). It
+  has to stay under ~2.3 mm, because two of the sockets sit under the nice!nano on its 2.5 mm headers.
+- The KS-33G's centre post reaches 3.70 mm below its seat (0.45 mm more than the KS-33). The case check
+  still finds no collisions, and the battery spot and screw lengths don't change.
+
 ## 1. Order the PCB
 
-Upload `kicad/fab/numpad-gerbers.zip` to any PCB fab. For PCBWay, `kicad/numpad.kicad_pcb.zip` already includes their BOM, netlist and positions files. Order a 2-layer, 1.6 mm, standard-spec board. The
+Upload `kicad/fab/numpad-gerbers.zip` to any PCB fab (for KS-33G switches: `kicad/fab_ks33g/numpad_ks33g-gerbers.zip`
+and `kicad/numpad_ks33g.kicad_pcb.zip`). For PCBWay, `kicad/numpad.kicad_pcb.zip` already includes their BOM, netlist and positions files. Order a 2-layer, 1.6 mm, standard-spec board. The
 design values (0.25 mm tracks, 0.2 mm clearance, 0.6/0.3 mm vias) are within every fab's limits. The three
 stabilizer cutouts are part of the board outline.
 
@@ -64,7 +94,7 @@ stabilizer cutouts are part of the board outline.
 The switches go on the front of the PCB. **Everything else** goes on the back (side B), except the
 low-battery LED, which is on the front.
 
-1. **Trim three sockets.** On the hotswap sockets for the three 2u keys ("0", "+", "Enter"), sand
+1. **Trim three sockets** (KS-33 board only; skip this on the KS-33G board). On the hotswap sockets for the three 2u keys ("0", "+", "Enter"), sand
    **1.1 mm off the tip of the solder tab that points at the stabilizer cutout**, leaving about 1.4–1.5 mm of
    tab. Without this, that tab hits the stabilizer housing. Dry-fit each socket to find the right tab, then
    clean and tin it.
@@ -73,11 +103,19 @@ low-battery LED, which is on the front.
 3. **Front side:** solder the 0603 LED. It sits under a hole in the plate between the keycaps.
 4. **Battery connector:** solder the JST PH on the back, then **trim its pins flush** on the front. They're
    3.4 mm long and poke 1.8 mm through; the plate only leaves 1.9 mm above the PCB.
+   - **Boards made from files before 2026-11-07** (the JST's two holes sit 3 mm closer to the top edge than
+     on the current board): the connector's body lands on the socket of the key to its right, so it can't be
+     fitted. Leave it off and
+     solder the battery leads straight into its two holes (+ into the oval pad 2, − into pad 1).
 5. **nice!nano:** the controller mounts on the back, components facing **away** from the PCB, on standard
    male header pins with 2.5 mm plastic spacers.
    - Fit pins **only** where the PCB has holes: 16 pins (RAW, RST, GND ×2, P0, P1, P4–P8, P14–P16, P18,
      P19). The other 8 positions sit over switch pads and are left off on purpose.
-   - Trim the pins on the front to about 1.4 mm.
+   - Trim the pins on the front to about 1.4 mm, **except** the 7 pins in the row nearer the board's left
+     edge: RAW, GND, RST at the USB end, and P18, P15, P14, P16 at the far end. Those 7 come up
+     *under* the two switches above the nano (2nd column, top two rows). The switch bottom sits flat on the
+     PCB there. Cut them **flush** and file the solder flat (≤ ~0.2 mm), or the switches won't seat. If you
+     socket the nano, the socket tails there need the same treatment.
 6. **Battery:**
    - **Check polarity first.** On the JST footprint, the oval pad (pad 2) is **battery +** and the
      squarer pad (pad 1) is **battery −**. Many cheap LiPos have their plug wired the other way round.
@@ -123,7 +161,9 @@ Requires ergogen v4.1.0 (`npm i -g ergogen@4.1.0`), KiCad 8 (its bundled Python 
    ```bash
    ergogen <scratch-folder> -o <scratch-folder>/out --clean
    ```
-   Then copy `out/pcbs`, `out/outlines` and `out/cases` over the ones in `output/`. Don't point ergogen
+   This builds both boards: `not_about_money` (KS-33) and `numpad_ks33g` (KS-33G). Both come out
+   unrouted. Save them as `output/pcbs/*.unrouted.kicad_pcb`, and copy `out/outlines` and `out/cases` over the
+   ones in `output/`. Don't point ergogen
    at `output/` directly: `--clean` empties the whole folder, including the routed board.
 2. **Route it.** Export a Specctra DSN with `pcbnew.ExportSpecctraDSN`, then route:
    ```bash

@@ -5,16 +5,24 @@
 #   case_plate.jscad   switch plate (board frame, plate top up), inset inside the tray walls,
 #                      with Gateron LP stabilizer cutouts, spacer bosses and an edge rim underneath.
 #   assembly.json      PCB + part boxes for viewer.html and the collision report below.
-# Run with KiCad's python:  "C:/Program Files/KiCad/8.0/bin/python.exe" build_case.py
+# Run with KiCad's python:  "C:/Program Files/KiCad/8.0/bin/python.exe" build_case.py [ks33g]
+#   no argument: the KS-33 (LP 2.0) board, files written next to this script
+#   ks33g:       the KS-33G (LP 3.0) variant board (MX sockets), files written to case/ks33g/
 # then render each .jscad with @jscad/cli@1 (see CLAUDE.md).
 #
 # Frames: "board frame" = ergogen xy (x = kicad_x, y = -kicad_y), z = 0 at the PCB underside,
 # PCB flat. "world" = case frame, z = 0 under the floor. World = board frame rotated about the
 # x axis by TILT_DEG around the PCB's rear edge (y = Y_PIVOT), then lifted by Z_REAR.
-import json, math, os, pcbnew
+import json, math, os, sys, pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BOARD = os.path.join(HERE, "..", "output", "pcbs", "not_about_money.kicad_pcb")
+VARIANT = sys.argv[1] if len(sys.argv) > 1 else ""
+if VARIANT not in ("", "ks33g"):
+    raise SystemExit("unknown variant %r (use ks33g or nothing)" % VARIANT)
+BOARD = os.path.join(HERE, "..", "output", "pcbs",
+                     "numpad_ks33g.kicad_pcb" if VARIANT else "not_about_money.kicad_pcb")
+OUT = os.path.join(HERE, VARIANT) if VARIANT else HERE
+os.makedirs(OUT, exist_ok=True)
 
 # ---- case ----
 FLOOR_T = 1.0
@@ -71,6 +79,20 @@ SOCKET_TABS = [(-9.55, 3.425, -7.0, 5.975), (5.2, 4.475, 7.75, 7.025)]
 # On the 2u keys the pad-1 tab reaches into the stabilizer cutout/housing. The user sands it down by hand:
 # 1.1mm off the tip leaves 1.45 of tab, ending 0.3 inside the cutout edge (and clear of the housing).
 SOCKET_TAB0_TRIM_2U = 1.1
+# Switch below its seat on the PCB top: centre post depth and half-width, plastic pegs (none modelled on KS-33)
+POST_D, POST_HW, PEGS = 3.25, 2.525, None
+if VARIANT == "ks33g":
+    # Gateron KS-33G (LP 3.0) drawing KS-33GJH10B045NW-X5B: same 2.50 seat-to-flange and 14.00 cutout, but the
+    # centre post reaches 3.70 below the seat (Ø5.0 hole), Ø1.7 pegs at +-5.08 reach ~3.05 (scaled off the
+    # front view), and the stem top is 8.95 up (travel 3.20).
+    POST_D, POST_HW, PEGS = 3.70, 2.5, (5.08, 0.85, 3.05)
+    # MX hotswap socket (Kailh CPG151101S11 / Gateron KS-2P02B01-01): ESTIMATED, no drawing yet. Two blocks
+    # around the Ø3 barrels at (-3.81,-2.54) and (2.54,-5.08), sized on the conservative side; tabs = the
+    # footprint's 2.55 x 2.5 pads. Height assumed the same as the Gateron LP socket.
+    SOCKET_H = 1.85
+    SOCKET_BODY = [(-5.6, -4.6, 0.6, -0.6), (0.0, -7.0, 4.6, -2.6)]
+    SOCKET_TABS = [(-8.36, -3.79, -5.6, -1.29), (4.6, -6.33, 7.12, -3.83)]
+    SOCKET_TAB0_TRIM_2U = 0.0
 # Battery: 301230 LiPo pouch (3.0 x 12 x 30, ~110mAh, nice!nano's recommended cell, with protection
 # board + JST PH lead). It sits in a floor pocket at the best-clearance spot found under the PCB.
 BATTERY = (3.0, 12.0, 30.0)      # thickness, width, length
@@ -153,7 +175,7 @@ pth = lambda p: p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH
 
 switches, stabs, cut, lights = [], [], {}, []
 sw_xy = [(mm(f.GetPosition().x), mm(f.GetPosition().y)) for f in b.GetFootprints()
-         if "switch_gateron" in f.GetFPIDAsString()]
+         if ("switch_gateron" in f.GetFPIDAsString() or "switch_mx_ks33g" in f.GetFPIDAsString())]
 grid_x = sorted(set(round(x, 2) for x, _ in sw_xy if sum(abs(x - x2) < 0.01 for x2, _ in sw_xy) > 1))
 grid_y = sorted(set(round(y, 2) for _, y in sw_xy if sum(abs(y - y2) < 0.01 for _, y2 in sw_xy) > 1))
 on = lambda v, g: any(abs(v - q) < 0.01 for q in g)
@@ -162,7 +184,7 @@ for f in b.GetFootprints():
     ref, fid = f.GetReference(), f.GetFPIDAsString()
     x, y = mm(f.GetPosition().x), mm(f.GetPosition().y)
     top = -PCB_T
-    if "switch_gateron" in fid:
+    if "switch_gateron" in fid or "switch_mx_ks33g" in fid:
         switches.append([x, -y])
         # Gateron KS-33 drawing (KS-33E10B055NN-Y24, heights from its seat on the PCB top): 14.0 body
         # through the plate, 14.7 flange whose underside is 2.50 up, 13.75 upper housing to 5.85, stem
@@ -173,7 +195,13 @@ for f in b.GetFootprints():
         box(ref + "_top", "switch", x - 6.875, y - 6.875, x + 6.875, y + 6.875, pt - 1.0, top - 5.85)
         box(ref + "_stem", "stem", x - 2.0, y - 0.55, x + 2.0, y + 0.55, top - 5.85, top - 8.90)
         box(ref + "_stem2", "stem", x - 0.55, y - 2.0, x + 0.55, y + 2.0, top - 5.85, top - 8.90)
-        box(ref + "_post", "switchpost", x - 2.525, y - 2.525, x + 2.525, y + 2.525, 0, 3.25 - PCB_T)
+        box(ref + "_post", "switchpost", x - POST_HW, y - POST_HW, x + POST_HW, y + POST_HW, 0, POST_D - PCB_T)
+        if PEGS:
+            o = math.radians(f.GetOrientationDegrees())
+            for sgn in (-1, 1):
+                gx, gy = x + sgn * PEGS[0] * math.cos(o), y - sgn * PEGS[0] * math.sin(o)
+                box("%s_peg%d" % (ref, (sgn + 1) // 2), "switchpost", gx - PEGS[1], gy - PEGS[1],
+                    gx + PEGS[1], gy + PEGS[1], 0, PEGS[2] - PCB_T)
         # hotswap socket from the official footprint, rotated with the switch (KiCad: +deg = CCW on screen)
         o = math.radians(f.GetOrientationDegrees()); co, so = math.cos(o), math.sin(o)
         def xf(r):
@@ -363,6 +391,16 @@ for bx in boxes:
     (x0, y0, _), (x1, y1, _) = bx["min"], bx["max"]
     if any(inside((x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * j / 6), h) for i in range(7) for j in range(7) for h in poly_holes):
         issues.append("%s sits over a PCB cutout" % bx["name"])
+# part vs part: boxes of different parts must not overlap (pieces of one part, e.g. a switch's socket and its
+# own post, may). Keycaps are skipped: they only meet each other at the 1mm gaps.
+def owner(n):
+    return "nano" if n in ("nano", "nano_parts", "usb_c", "hdr") else n.split("_")[0]
+parts = [bx for bx in boxes if bx["kind"] != "keycap"]
+for i, a in enumerate(parts):
+    for b_ in parts[i + 1:]:
+        if owner(a["name"]) != owner(b_["name"]) and all(
+                min(a["max"][k], b_["max"][k]) - max(a["min"][k], b_["min"][k]) > 1e-6 for k in range(3)):
+            issues.append("%s overlaps %s" % (a["name"], b_["name"]))
 
 led_room = plate_gap + PLATE_T - PLATE_SKIN      # gap + counterbore
 if LED_H > led_room - 0.2:
@@ -578,8 +616,8 @@ function main() {
        SCREW_R, CSK_R, SPACER_R, J([r3(r) for r in reliefs]), J([r3(l) for l in lights]), LED_HOLE_R, PLATE_T, round(PLATE_TOP - PLATE_T, 3), PCB_T, RIM_W, PLATE_SKIN,
        STAB_DX, STAB_W, STAB_H, STAB_NOTCH_W, STAB_NOTCH_D, STAB_NECK_H, STAB_NECK_Y, STAB_CUT_Y)
 
-open(os.path.join(HERE, "case_bottom.jscad"), "w").write(bottom)
-open(os.path.join(HERE, "case_plate.jscad"), "w").write(plate)
+open(os.path.join(OUT, "case_bottom.jscad"), "w").write(bottom)
+open(os.path.join(OUT, "case_plate.jscad"), "w").write(plate)
 
 json.dump({"tilt_deg": TILT_DEG, "y_pivot": Y_PIVOT, "z_rear": Z_REAR,
            "pcb": {"outline": outline, "poly_holes": poly_holes,
@@ -589,7 +627,7 @@ json.dump({"tilt_deg": TILT_DEG, "y_pivot": Y_PIVOT, "z_rear": Z_REAR,
            "world_boxes": ([{"name": "battery", "kind": "battery",
                              "min": [batt_rect[0], batt_rect[1], FLOOR_T - BATT_POCKET_D],
                              "max": [batt_rect[2], batt_rect[3], FLOOR_T - BATT_POCKET_D + BATTERY[0]]}] if batt_rect else [])},
-          open(os.path.join(HERE, "assembly.json"), "w"))
+          open(os.path.join(OUT, "assembly.json"), "w"))
 print("2u stabilizers at:", stabs)
 print("M2 countersunk screws from the top (self-tapping into the pillars):")
 for (px, py, L, depth, top) in screws:

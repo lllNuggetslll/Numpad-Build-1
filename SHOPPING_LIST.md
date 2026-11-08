@@ -7,10 +7,10 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 
 | Qty | Part | Exact part / spec | Notes |
 |---|---|---|---|
-| 1 | PCB | 2-layer, 1.6 mm FR-4, from `kicad/fab/numpad-gerbers.zip` | Any fab (JLCPCB, PCBWay, …). The 3 stabilizer cutouts are in the board outline, so no extra milling is needed. |
+| 1 | PCB | 2-layer, 1.6 mm FR-4, from `kicad/fab/numpad-gerbers.zip` (KS-33 switches) or `kicad/fab_ks33g/numpad_ks33g-gerbers.zip` (KS-33G switches) | Any fab (JLCPCB, PCBWay, …). The 3 stabilizer cutouts are in the board outline, so no extra milling is needed. |
 | 1 | Controller | **nice!nano v2** | Wireless nRF52840 (ZMK). |
 | 16 | Header pins | 2.54 mm single-row male headers with standard **2.5 mm** plastic | Only 16 of the 24 positions are used (see the README). Buy a 1×40 strip. |
-| 21 | Hotswap sockets | **Gateron Low Profile Hot-swap 2.0, KS-2P02B01-02** | Must be the **low-profile** version (-02). The regular -01 socket doesn't fit. Sold in packs of 70/110. |
+| 21 | Hotswap sockets | **Gateron Low Profile Hot-swap 2.0, KS-2P02B01-02** | Must be the **low-profile** version (-02). The regular -01 socket doesn't fit. Sold in packs of 70/110. **KS-33G board:** use MX-pattern sockets instead (Gateron KS-2P02B01-01 or Kailh CPG151101S11), and check they're under ~2.3 mm tall. |
 | 21 | Diodes | 1N4148W, **SOD-123** | |
 | 1 | Reset button | **Panasonic EVQ-PUA02K** (or EVQ-PUC02K / EVQ-PUL02K) | Side-push SMD, 4.7 × 3.5 mm. PUA02K is the easy-to-find one; it has no locating pegs, so the two small holes stay empty. Not EVQ-PUD02K (3.2 mm deep). |
 | 1 | Power switch | **MSK-12C02-style side slide switch, H = 2.5 mm** (7-pin SMD, 6.65 × 2.7 × 1.4 body, 1.5 mm pin pitch) | Must be the **2.5 mm lever** version, so it sticks ~0.5 mm out of the case. The 1.5/2.0 versions (and the Alps SSSS811101) fit the pads but end inside the wall. |
@@ -23,7 +23,7 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 
 | Qty | Part | Exact part / spec | Notes |
 |---|---|---|---|
-| 21 | Switches | **Gateron KS-33 Low Profile 2.0** (e.g. Brown, KS-33E10B055NN-Y24) | Any KS-33 variant. Sold in packs of 35/70/110. |
+| 21 | Switches | **Gateron KS-33 Low Profile 2.0** (e.g. Brown, KS-33E10B055NN-Y24) | Any KS-33 variant. Sold in packs of 35/70/110. **Or** Gateron **KS-33G Low Profile 3.0** (e.g. Silent Red, KS-33GJH10B045NW-X5B) with the KS-33G board (`kicad/fab_ks33g/`). The two kinds don't fit each other's board. |
 | 3 | Stabilizers | **Gateron Low Profile Plate-Mounted Stabilizer 2U, KS-57B210T** | For the "0", "+" and "Enter" keys. |
 | 18 | Keycaps, 1u | Low-profile keycaps for Gateron LP / KS-33 switches, **18 mm** | Standard-height MX keycaps are too tall for this build. |
 | 1 | Keycap, 2u horizontal | Same profile, 2u wide (37 × 18 mm) | "0" key. Its stabilizer mounts must sit **24 mm apart** (12 mm each side of the centre), to match the KS-57 stabilizers. Same for the two vertical 2u caps. |

@@ -62,6 +62,38 @@ Gateron low-profile **hotswap** switches. Generated with ergogen; routed with fr
   - **2u switch footprints:** separate `key_switch_0` (c1_r6, `rotate: 0`) and `key_switch_tall`
     (c4_r3/c4_r5, `rotate: 90`) entries, both with `outer_pad_width_*: 1.6`, so the socket pads clear the
     cutouts. The rotations were picked by DRC-testing all four; the cross stem doesn't care.
+  - **Tall-key diodes (KS-33 board, fixed 2026-11-07):** every diode sits at `shift: [7.1, 1.25]`, but
+    `key_switch_tall` (`rotate: 90`) turns the socket onto that spot. The old D18/D19 had pad 2 over the
+    socket's Ø3 drill and their body under the socket body. DRC missed it (same net c4_rN; the diode footprint has no courtyard), and so did
+    `build_case.py`, which had no part-vs-part check then (added 2026-11-07, see "JST battery connector move"). Now `diodes_tall` (`[matrix_c4_r3, matrix_c4_r5]`,
+    `shift: [-5.0, 1.25]`) puts them under the switch's left half at KiCad x 152.0: 1.60 to the centre pad,
+    1.58 to the bar slot, 1.67 to the centre post. Ergogen renumbered them: **D20 = "Enter" (c4_r5), D21 = "+"
+    (c4_r3)**; the old D20/D21 (c4_r2/c4_r1) are now D18/D19. The KS-33G board was already clear and has no
+    `diodes_tall`.
+    - **The user already has boards of the old revision** (commit 8859cc4's board). Bodge given 2026-11-07:
+      leave D18/D19 empty. Fit the sockets normally, then put a SOD-123 (or 1N4148) in the strip between the
+      socket and the right board edge. Its cathode (band) goes on a scraped spot of the row trace (B.Cu,
+      x 165.05; R5 at y ≈ 79.6, R3 at y ≈ 41.6, KiCad coords), and a short wire runs from its anode to the
+      socket's pad-2 solder tab (x 161.5..164.0, y 82.75..85.3 / 44.75..47.3). Pad 1 = cathode = row on these
+      footprints. Under-PCB room there is ~3.6 (S20) / ~5 (S21).
+      - The 2 Oct (d0959ac) and 5 Oct (2b086c1) gerbers route these nets identically. The R5/R3 edge traces
+        are confirmed in the gerber B_Cu (X165048800).
+      - When drawing the back for hand work, **mirror it** (render.py's bottom view is see-through from
+        the front, so the right edge stays on the right). The user was misled by the unmirrored picture.
+      - The only plated rings near the tall keys are the socket holes (pad 1 = column C4, pad 2 = c4_rN) and
+        the no-net Ø5.1 centre hole. No ring is on the row net.
+      - Two options were given (re-checked against the parts 2026-11-07, picture `draw_back2.py` in scratch).
+        (a) Skip the socket on these 2 keys and solder the switch pins straight into the Ø3 plated rings. D18's
+        pad 2 is ~60% over the open Ø3 hole (pad x 163.5..164.7 vs hole edge 164.25), so use an **axial
+        1N4148** instead: anode lead into the pad-2 ring beside the switch pin (it also fills the gap), cathode
+        to D18/D19 pad 1 (row). Trim the lead flush on the front or it lifts the switch.
+        (b) Keep the socket: a bodge diode with its band end toward D13's (S20) or D15's (S21) band end
+        (row-5/row-3 cathode, back, x 145.1), plus a wire to the socket's pad-2 tab. **The stab housing hole
+        (x 147..162.45, y 75.25..81.75 for S20, 37.25..43.75 for S21) sits between them**, and the housing hangs
+        0.35 below the PCB there. Route through the clear strip y 81.75..87.7 (S20; S21 = -38), x 149.82..160.58:
+        diode lying at y ≈ 84 with its anode on the tab (x 161.5), wire across the 1.6 bar slot (x 148.2..149.8;
+        the stab bar stays above the PCB) to D13's pad 1 (y 81.4). Don't run down toward S12/S14's tab1
+        (x 143.2..145.75, y 85.5..88), which is c3_rN.
   - **Screws moved for the bars:** front-left → (128.5, 90.5) (`ref: matrix_c3_r6`, past the end of the "0"
     key's bar); front-right → (147.5, 71.5) (one row back). See the case section.
 - **Low-battery LED (the one exception to "everything on B"):** `battery_led` is a 0603 LED on the
@@ -76,6 +108,54 @@ Gateron low-profile **hotswap** switches. Generated with ergogen; routed with fr
 - Use hotswap switches (`ceoloide/switch_gateron_ks27_ks33`, `hotswap: true`, `solder: false`), not choc.
 - Show the user a quick prototype image before a big layout change.
 - The user has KiCad 8 (and 10) installed. Drive it through its bundled Python (`pcbnew`) and `kicad-cli`.
+  - **The user views boards in the KiCad 10 GUI.** Open boards for them with
+    `C:\Program Files\KiCad\10.0\bin\pcbnew.exe`, never the KiCad 8 GUI.
+  - Opening KiCad 8's GUI rewrites `numpad.kicad_pro` in v8 format (meta version 3 → 1). On close it also
+    writes `numpad.kicad_prl` with numeric `visible_items`, which KiCad 10 reads as "show only the outline".
+    Fix (2026-11-07): restore `.kicad_pro` from git and copy `numpad_ks33g.kicad_prl` (KiCad 10 format, named
+    items) with its `filename` changed. KiCad 8's headless `pcbnew`/`kicad-cli` don't touch these files.
+
+## KS-33G variant (Low Profile 3.0, added 2026-11-01)
+
+A second PCB, `numpad_ks33g`, for Gateron **KS-33G** switches. The source is the user's spec
+`C:/Users/Nuggets/Downloads/GATERONKS-33LowProfileSilent30MechanicalRedSwitchKS-33GJH10B045NW-X5B.pdf`; the
+drawing is page 9, vector with no dimension text, so render it with pymupdf.
+- **Same as KS-33:** 14.00 plate cutout, flange underside (plate top) **2.50** above the seat, 1.20 plate, 13.75
+  upper housing. So the plate, stabs and case are unchanged. Differences: flange 14.60, stem top 8.95 (12.65 overall),
+  travel 3.20 ±0.2, 45 ±15 gf. **Centre post 3.70 below the seat** (vs 3.25). Ø1.7 pegs reach ~3.05 and pins ~2.9;
+  both are scaled off the front view.
+- **PCB layout = MX pins** (the drawing shows it rotated 180°): centre Ø5.00, pegs Ø1.70 at ±5.08, pins Ø1.50
+  at the MX positions. So it takes **MX-pattern hotswap sockets** (Gateron KS-2P02B01-01 / Kailh CPG151101S11).
+  Keebio confirms the LP 3.0 = MX pinout plus a larger centre hole.
+- Footprint `footprints/custom/switch_mx_ks33g.js` is ceoloide `switch_mx` with `center_hole_diameter: 5.0`
+  (NPTH), pegs 1.7, and exclude-from-BOM/pos (so the PCBWay BOM matches the main board).
+- `config.yaml`: the second `pcbs:` entry reuses every shared footprint through YAML anchors (`&fp_*` / `*fp_*`).
+  Regenerating `not_about_money` from it gives the committed unrouted board byte for byte (except the date).
+- **Socket rotations** were picked by DRC-sweeping all four on the unrouted board:
+  - 1u: 180 (socket toward the front, clear of the diode at +7.1 and of RST1).
+  - c2_r1/c2_r2 (under the nano): 270 is the only rotation that clears the kept nano pins. The
+    `omit_pins` set and the pin map are unchanged, so the **firmware is the same**. Their diodes are shifted to
+    x +7.9 (`diodes_mcu`) for body room.
+  - "0" key: 180. Tall keys: 90.
+- **MX socket body is an estimate** (no drawing found; Kailh's PDF has an expired cert): `build_case.py ks33g`
+  uses two blocks around the barrels plus the pad tabs, 1.85 tall. Under the nano it must stay below the USB shell, 1.72 below the PCB at `HEADER_GAP` 2.5: the 1.85 estimate is 0.13 into it (S18), see Open items.
+- `build_case.py ks33g` → (2026-11-07, with the new part-vs-part check) S18 socket vs USB shell (Open items), otherwise clean since the JST move; same Z_REAR 8.10, battery spot and screws. The tray and plate
+  geometry are identical to the KS-33 case (only array order differs), so **one case fits both boards**. It
+  writes to `case/ks33g/`, which was deleted after the check; regenerate it when needed.
+- Routed 2026-11-01: 0 unconnected, no errors (cosmetic lib/silk warnings only). 18 vias, ~1.93 m of track.
+- **Stabilizers with KS-33G (checked 2026-11-01):**
+  - x/y: identical to the KS-33 board. Each 2u switch is centred between its stab cutouts (cutout centre offset
+    2.275 toward the bar), and the plate is the same.
+  - Height: the margin is thin. gmsh test (STEP solids 1/2 = actuators, 3/5 = housings, 4 = wire; actuator
+    translated down until `intersect` with its housing > 0): the actuator hits the housing floor **3.25 below
+    its STEP pose** (top 4.05 above the plate top). The KS-33G stem rests 0.05 higher (6.45 vs 6.40 above the
+    plate) and travels 3.2 ±0.2 vs 3.0, so the stab has ~0.05 spare vs ~0.25 with the KS-33. A 3.4 switch could
+    let the 2u ends stop ~0.15 early.
+  - Unresolved: where the keycap holds the actuator at rest (drawing free height 7.70, STEP 7.30). The actuator
+    rests on the wire arm, 0.08 above it.
+  - A rigid rotation of the wire about its bar (y -7.975, z 3.825 in the STEP frame) overlaps the housing even at
+    rest, so that model can't judge wire travel.
+  - → **test-fit one 2u key** before buying a full set.
 
 ## Controller pin constraints (important)
 
@@ -93,8 +173,24 @@ Instead, `footprints/custom/mcu_nice_nano_sparse.js` (a copy of the ceoloide foo
   - P0 drives the low-battery LED (active high). P1 is the only free spare.
 - **Moving the MCU:** re-check that every pin it uses still clears the switch and diode pads by at least 0.2mm.
   Load the board with pcbnew and measure distance from each MCU pad to every other pad.
+- **Header pins under switches (found 2026-11-07):** 7 kept pins of the nano's x 113.82 row come up through
+  the PCB top *inside* a switch's 14×14 body (switch-local x -5.18): pads 14–16 (R1, C4, C3) under the
+  c2_r2 switch (119,-24), pad 17 (C2) 0.33 into its edge, and pads 22–24 (RST, GND, RAW) under c2_r1 (119,-5).
+  S9/S10 on the KS-33 board, S17/S18 on KS-33G. The KS-33 drawing shows a closed lower housing seated flat on
+  the PCB, so these pins **must be cut flush** (README says so). Their plate pockets are moot (they're in the
+  switch hole). `build_case.py` doesn't model pin tips above the PCB, so its collision report can't see this.
+  RST1's empty Ø0.75 boss hole under c3_r1 is harmless.
 - **Assembly:** use single header pins at the kept positions only. The controller sits over the hotswap
   sockets on the back, so it needs header spacing taller than about 1.8mm.
+  - **Socketing (female/male headers), checked 2026-11-04:** the kept pins form a 3-pin run (USB end) and a
+    5-pin run on each side. Use 3- and 5-pin segments: a full 12-pin strip's plastic would land on S10's
+    socket body (left row) and S16's solder tab (right row). The 1.0 drills take normal header tails.
+    The case (`HEADER_GAP`, now 2.5) is unchanged up to a 3.0 board-to-board gap. Above that it grows 1:1
+    (3.5 → +0.5, 5.0 → +2.0, 8.5-tall female + 2.5 male spacer = 11 → +8.0), with no collisions; set
+    `HEADER_GAP` to the real seated height and re-run `build_case.py`.
+  - Candidate kit: Typeractive "Machine Sockets and Pins" (2× 12-pin Mill-Max 310-series machined socket
+    strips + 26 loose Mill-Max pins). The 310 insulator is ~2.79 tall (listed for another 310 strip), so
+    the case should stay unchanged. Cut each strip into 3 + 5 pieces.
 
 ## Files
 
@@ -112,14 +208,25 @@ Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-arc
     2026-10-04).
   - `pcbs/not_about_money.kicad_pcb` is **routed**: 0 unconnected, DRC errors none, only the cosmetic
     lib/silk warnings; report in `pcbs/drc.rpt`, preview `routed.svg`.
+    - Re-routed 2026-11-07 for the tall-key diode move, and only partly. The old tracks were copied onto the
+      regenerated board, minus nets R3/R5/c4_r3/c4_r5, which freerouting re-routed (keepout_dsn) in one
+      clean pass. Scripts for this (`carry_tracks.py`, `cmp_boards.py`) were scratch-only; the recipe: for
+      each old track, `new.FindNet(name)`, copy it as `PCB_TRACK`/`PCB_VIA`, lock it.
+    - `pcbs/numpad_ks33g.unrouted.kicad_pcb` was re-saved by KiCad at some point, so compare it to fresh
+      ergogen output with pcbnew (footprints/nets), not with a text diff.
   - `pcbs/not_about_money.unrouted.kicad_pcb` is the raw ergogen output. MCU pins clear other pads by ≥1.51.
+  - `pcbs/numpad_ks33g.kicad_pcb` (routed) / `.unrouted.kicad_pcb`, `pcbs/drc_ks33g.rpt`, `routed_ks33g.svg`:
+    the KS-33G variant (see its section). ergogen now emits both boards.
   - **Never run `ergogen -o output --clean`**: it empties the folder, wiping the routing (and anything else
     in `output/`). Generate into a scratch dir and copy `pcbs/ outlines/ cases/` over.
   - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb`.
 - `kicad/`: the user's KiCad project (moved from `output/numpad/` on 2026-10-02, so ergogen can't wipe it).
   - `numpad.kicad_pcb` is a copy of the routed board. DRC is clean under the project's own rules (edge
     clearance 0.2): 0 violations, 0 unconnected.
-  - **`scripts/export_all.sh` regenerates every fab output** from `numpad.kicad_pcb` (run it after any board change):
+  - `numpad_ks33g.kicad_pro/.kicad_pcb/.kicad_sch`: the KS-33G variant as a second project in the same folder
+    (shares `3d/`). `export_all.sh numpad_ks33g` writes `fab_ks33g/`, `numpad_ks33g.kicad_pcb.zip`,
+    `gerber_render_ks33g_*.png`, `drc_ks33g.rpt`.
+  - **`scripts/export_all.sh [board]` regenerates every fab output** from `numpad.kicad_pcb` (run it after any board change):
     - `fab/`: gerbers (`--subtract-soldermask`, 9 layers), drill + map, `drc-report.txt`, `numpad-gerbers.zip`.
     - `numpad.kicad_pcb.zip`: the **PCBWay order package** in the PCBWay plugin's format: `.gbr` gerbers incl.
       User_Comments, separate PTH/NPTH Excellon (inch, decimal, absolute), IPC-D-356 netlist (needs KiCad 10's
@@ -170,6 +277,11 @@ Ergogen output is unrouted.
      tracks, re-exporting the DSN (the remaining tracks stay fixed) and routing again fixed it.
    - It also ignores **no-net pads**: on the nano-shift board it ran RAW over a PWR1 mounting pad (a short).
      Same fix: delete RAW's tracks, lock the rest, re-export and route again.
+   - **Better (2026-11-01, KS-33G board, whose Ø5 centre holes are NPTH):** export the DSN with
+     `kicad/scripts/keepout_dsn.py` (rule-area keepouts over every no-net pad + 0.3), route, and import the .ses
+     into the board *without* keepouts. If DRC still shows shorts or clearance errors (freerouting also clips real
+     pads now and then), run `kicad/scripts/strip_bad_nets.py board drc.rpt stripped`, then keepout_dsn → route →
+     import → DRC again. Two passes converged. Unlock the tracks at the end.
 3. Import the session (`pcbnew.ImportSpecctraSES(board, "x.ses")`), set
    `GetDesignSettings().m_CopperEdgeClearance = FromMM(0.2)`, then save.
 4. DRC: `kicad-cli pcb drc --severity-error --severity-warning -o x.rpt board.kicad_pcb`.
@@ -206,6 +318,11 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 - **Supports:** each screw pillar gets its own height, cut by the tilted PCB-underside plane. There are also
   L-shaped **corner ledges** (1.6 wide, 10mm arms). Supports are intersected with the cavity, so they
   never poke through the walls.
+- **Plate vs board verified 2026-11-07** (both boards): render `case_plate.jscad`, slice the STL (trimesh
+  `mesh_plane` + shapely, installed with `pip --target` in a scratch dir) and compare with a pcbnew dump. All 21
+  switch holes are exactly ±7.00 on their footprints; stab wings and notches are on the bar side, as on the
+  PCB, with housings 0.30 inside the PCB cutouts; screw holes are r 1.10, offset 0.000; every non-switch
+  THT pad sits in a closed pocket with 0.50 margin; the LED hole is centred. Committed STLs = fresh renders.
 - **Plate:** 1.2mm, top **2.5mm** above the PCB top (the KS-33 flange height; was 2.2 until 2026-10-05,
   which would have held every switch 0.3 off the PCB). It is inset inside the walls (0.2 per side).
   - Cutouts: 14×14 switch holes; Gateron LP stab cutouts per Gateron's suggested mounting (wings 6.0×12.5
@@ -309,7 +426,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
     best-clearance spot and cuts a **0.5-deep floor pocket** (cell + 0.5 per side), plus a 4×6 lead notch on
     the end facing the JST.
     - Current spot (since 2026-10-05): **x 130.5..160.5, y -11..1**, lying across the rear right, under the
-      top switch row, 1.72 spare under the S16/S18 sockets. The lead runs about 28mm from its x 130.5 end to
+      top switch row, 1.72 spare under the S16/S18 sockets. The lead runs about 31mm (since the JST move) from its x 130.5 end to
       the JST. A 301230's lead is usually 40–50mm.
     - The previous spot (x 98.5..110.5, y -27.5..2.5, left of the nano) still fits with 1.36 spare. It dropped
       out when the switch centre posts were added to the model (S4's post is lowest there).
@@ -346,18 +463,44 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 - Bare board, 2-layer, 1.6mm. Export: `kicad-cli pcb export gerbers --output fab/ board.kicad_pcb` and
   `kicad-cli pcb export drill --output fab/ board.kicad_pcb`, then zip. Design values (0.2mm track on
   every net, power included; 0.2mm clearance, 0.6/0.3 via) are within any fab's limits.
-- Power path (measured 2026-10-04): JST (128.5,32.5) → BAT_P ~52mm, 1 via → power switch → RAW ~39mm →
-  nano pin 24. About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge current. That
-  was judged fine, so the JST was left where it is.
+- Power path (measured 2026-10-04, JST then at 128.5,32.5): JST → BAT_P ~52mm, 1 via → power switch → RAW
+  ~39mm → nano pin 24. About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge
+  current. The 2026-11-07 JST move added ~4mm to BAT_P (negligible).
 
 ## Open items
 
 - If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and run `kicad/scripts/export_all.sh`.
+- **KS-33G: S18's MX socket overlaps the nano's USB shell by 0.13** (shell 1.72 below the PCB at
+  `HEADER_GAP` 2.5, socket est. 1.85), reported by `build_case.py ks33g`'s part-vs-part check. Raise
+  `HEADER_GAP` to ≥ 2.7 (socketed headers do that) or confirm the socket height.
 
-- Switch centre hole: Gateron's KS-33 layout says Ø5.25; the footprint drills a plated Ø5.1 for a Ø5.05
+## JST battery connector move (2026-11-07, done)
+
+- **The old spot collided on every earlier revision, including the user's fabricated boards.** JST1 (side-entry
+  S2B-PH-K-S, rot 90, at KiCad 128.5,32.5; body x 127.1..134.8 y 29.5..35.5 from its B.Fab = JST's 5.9 width)
+  lay on S15's socket (c3_r2, KS-33 board) by 1.37 in y over x 131..134.8, plus S15's pad-1 tab. On KS-33G it
+  hit S13's MX socket.
+  - Bodge for built boards (in README): leave the JST off and solder the battery leads into JST1's holes
+    (pad 1 GND at y 31.5, pad 2 BAT_P at y 33.5).
+- **Now at KiCad (128.5, 35.5)** (config shift y `- 2` instead of `+ 1`), pads GND (128.5,34.5), BAT_P
+  (128.5,36.5), on both boards. Found by a grid search over both boards' part boxes, case posts/ledges, the
+  battery, plate-pocket vs switch holes and pad clearance. It is the only clear spot near the old one: 0.68 to the
+  nearest part, floor gap 0.52. Any further forward raises `Z_REAR` (the body bottom would hit the floor
+  clearance). The only other clear spots were at the left edge (x ~110, y -1 or 16).
+- Re-routed by hand (pcbnew script, scratch only): old tracks copied, the 5 stub segments to the old pads
+  dropped, new F.Cu GND/BAT_P stubs (KS-33G: BAT_P on B.Cu along x 130.08). DRC on both boards: 0 unconnected,
+  cosmetic warnings only. Case unchanged except the plate's pin pockets; battery spot, Z_REAR and screws are the same.
+- `build_case.py` has a **part-vs-part check** since then (boxes of different parts must not overlap; pieces
+  of one part may).
+
+- KS-33G board: measure the MX hotswap sockets (body height, outline) before ordering; the case model's socket
+  is an estimate and must stay under the USB shell (1.72 below the PCB at `HEADER_GAP` 2.5), or raise `HEADER_GAP`.
+- Switch centre hole (KS-33 board): Gateron's KS-33 layout says Ø5.25; the footprint drills a plated Ø5.1 for a Ø5.05
   post, which may come out too tight. Enlarging the drill (pad 5.6 unchanged) needs the user's OK, then a
   DRC + `export_all.sh`.
 - Test-print the rear wall with the user's USB-C cable: cable heads bigger than 12.5×6.5 won't fit the scoop.
+- KS-33G: test-fit one 2u key (switch + KS-57 stab + keycap). Both ends must bottom out like the middle; the
+  stab's travel is only ~0.05 more than the switch's nominal 3.2.
 - Before committing to the plate, test-print one stab cutout (now Gateron's suggested mounting, checked against
   the STEP; FDM holes print small, and the latch catch is only ~0.05).
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering
