@@ -1,6 +1,6 @@
 # Generates the case from the board (single source of truth for the stack-up):
 #   case_bottom.jscad  tilted tray: flat floor, PCB parallel to the sloped top edge,
-#                      screw pillars + corner support ledges cut to the PCB underside,
+#                      screw pillars, corner ledges and corner-to-corner side rails cut to the PCB underside,
 #                      rear-wall windows for USB-C / reset / power.
 #   case_plate.jscad   switch plate (board frame, plate top up), inset inside the tray walls,
 #                      with Gateron LP stabilizer cutouts, spacer bosses and an edge rim underneath.
@@ -16,7 +16,9 @@
 import json, math, os, sys, pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VARIANT = sys.argv[1] if len(sys.argv) > 1 else ""
+BOXES_ONLY = "--boxes" in sys.argv          # internal: print this board's below-PCB part boxes as JSON and exit
+ARGS = [a for a in sys.argv[1:] if a != "--boxes"]
+VARIANT = ARGS[0] if ARGS else ""
 if VARIANT not in ("", "ks33g"):
     raise SystemExit("unknown variant %r (use ks33g or nothing)" % VARIANT)
 BOARD = os.path.join(HERE, "..", "output", "pcbs",
@@ -39,7 +41,13 @@ PILOT_R = 0.8              # self-tapping M2 pilot in the pillar; runs the full 
 PILOT_EXTRA = 0.5          # min pilot left below the screw tip
 MIN_THREAD = 1.5
 SCREW_LENGTHS = [4, 5, 6, 8, 10, 12]   # countersunk length includes the head
-LEDGE_W, LEDGE_ARM = 1.6, 10.0   # corner support ledges: width in from the wall, arm length
+LEDGE_W, LEDGE_ARM = 1.6, 10.0   # support ledges: width in from the wall, front/rear corner arm length
+LEDGE_SIDE = 0.3           # left/right rails run corner to corner; a part within this of a rail (across it) notches it.
+                           # Kept small on purpose: 0.6 also caught sockets beside the rail (S20 0.77 off) whose
+                           # 2.45-deep notch is too low to keep, so it broke the right rail by the Enter key.
+LEDGE_CLEAR = 0.6          # notches reach this far past a part's ends (along the wall)
+LEDGE_NOTCH_CLEAR = 0.6    # ...and drop this far below its bottom (socket tab 0.4 + 0.6 = 1.0 deep)
+LEDGE_MIN_H = 1.0          # a notched rail piece lower than this above the floor is left out
 GAP = 0.4                  # wiggle room around each wall cutout, per side
 PITCH = 19.0
 KEYCAP = 18.0              # 1u keycap; 2u = 2 * PITCH - 1
@@ -300,6 +308,16 @@ for f in b.GetFootprints():
         jcy = (fab[1] + fab[3]) / 2
         box(ref + "_plug", "plug", fab[2], jcy - pw / 2, fab[0] + reach + bend, jcy + pw / 2, 0, ph)
 
+if BOXES_ONLY:
+    print(json.dumps([bx for bx in boxes if bx["min"][2] < 0]))
+    raise SystemExit(0)
+# The tray must fit both boards (KS-33 and KS-33G), so the side rails are also notched for the other board's
+# parts below the PCB.
+import subprocess
+OTHER = "" if VARIANT else "ks33g"
+other_boxes = json.loads(subprocess.run([sys.executable, os.path.abspath(__file__), "--boxes"] + ([OTHER] if OTHER else []),
+                                        capture_output=True, text=True, check=True).stdout)
+
 # ---- tilt: lift the board until the lowest part clears the floor ----
 th = math.radians(TILT_DEG)
 def world_z(y, z, z_rear):
@@ -331,11 +349,29 @@ ix0, ix1 = CX - INNER[0] / 2, CX + INNER[0] / 2
 iy0, iy1 = CY - INNER[1] / 2, CY + INNER[1] / 2
 ledges = []
 for (xw, sx) in ((ix0, 1), (ix1, -1)):
-    for (yw, sy) in ((iy0, 1), (iy1, -1)):
+    for (yw, sy) in ((iy0, 1), (iy1, -1)):   # front/rear arms of each corner
         xs, ys = sorted([xw, xw + sx * LEDGE_ARM]), sorted([yw, yw + sy * LEDGE_W])
-        ledges.append([xs[0], ys[0], xs[1], ys[1]])
-        xs, ys = sorted([xw, xw + sx * LEDGE_W]), sorted([yw, yw + sy * LEDGE_ARM])
-        ledges.append([xs[0], ys[0], xs[1], ys[1]])
+        ledges.append([xs[0], ys[0], xs[1], ys[1], 0.0])
+    # left/right side rails: one ledge from corner to corner along the wall. Where a part of either board hangs
+    # below the PCB over it (e.g. a socket solder tab), the rail top drops to part bottom + LEDGE_NOTCH_CLEAR (a notch);
+    # it only breaks if that would leave less than LEDGE_MIN_H of rail.
+    xs = sorted([xw, xw + sx * LEDGE_W])
+    rail = [(iy0, iy1, 0.0)]                        # (y0, y1, drop below the PCB underside)
+    for bx in boxes + other_boxes:
+        if bx["min"][2] >= 0 or bx["min"][0] >= xs[1] + LEDGE_SIDE or bx["max"][0] <= xs[0] - LEDGE_SIDE:
+            continue
+        b0, b1, d = bx["min"][1] - LEDGE_CLEAR, bx["max"][1] + LEDGE_CLEAR, -bx["min"][2] + LEDGE_NOTCH_CLEAR
+        nxt = []
+        for (a0, a1, ad) in rail:
+            if b1 <= a0 or b0 >= a1 or ad >= d:
+                nxt.append((a0, a1, ad)); continue
+            if b0 > a0: nxt.append((a0, b0, ad))
+            nxt.append((max(a0, b0), min(a1, b1), d))
+            if b1 < a1: nxt.append((b1, a1, ad))
+        rail = nxt
+    for (a0, a1, ad) in rail:
+        if a1 - a0 > 1e-6 and world_z(a0, -ad, Z_REAR) - FLOOR_T >= LEDGE_MIN_H and world_z(a1, -ad, Z_REAR) - FLOOR_T >= LEDGE_MIN_H:
+            ledges.append([xs[0], a0, xs[1], a1, round(ad, 3)])
 
 # ---- plate underside supports: rim along the edge + spacer bosses ----
 pw, ph, pr = INNER[0] - 2 * PLATE_TOL, INNER[1] - 2 * PLATE_TOL, INNER[2] - PLATE_TOL
@@ -367,7 +403,7 @@ for bx in boxes:
     if collar and bx["name"] != "usb_c" and bx["min"][2] < -COLLAR_TOP and overlap(bx, collar[:4]):
         issues.append("%s hits the USB collar" % bx["name"])
     for L in ledges:
-        if below and overlap(bx, L):
+        if bx["min"][2] < -L[4] + 1e-6 and overlap(bx, L):
             issues.append("%s hits corner ledge %s" % (bx["name"], [round(v, 1) for v in L]))
     for R in rim:
         if between and overlap(bx, R) and not bx["kind"].startswith("switch"):
@@ -499,8 +535,10 @@ function main() {
         sup = sup ? sup.union(c) : c;
     }
     for (var k = 0; k < ledges.length; k++) {
-        var L = ledges[k];
-        sup = sup.union(CSG.cube({ corner1: [L[0], L[1], 0], corner2: [L[2], L[3], 30] }));
+        var L = ledges[k];   // [x0, y0, x1, y1, drop]: top sits drop below the PCB underside (notch under a part)
+        var lg = CSG.cube({ corner1: [L[0], L[1], 0], corner2: [L[2], L[3], 30] });
+        if (L[4] > 0) lg = lg.intersect(T(CSG.cube({ corner1: [cx - big, cy - big, -big], corner2: [cx + big, cy + big, -L[4]] })));
+        sup = sup.union(lg);
     }
     tray = tray.union(sup.intersect(belowPcb).intersect(cavity));
     // collar around the USB port inside the rear wall, so the scoop has a back wall flush with the USB mouth

@@ -308,16 +308,39 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   - `case_plate.jscad`: the plate.
   - `assembly.json`: the PCB + part boxes, including keycaps and stab housings.
   It also prints the stack-up and a **collision report** that checks:
-  - parts vs standoffs and corner ledges;
+  - parts vs standoffs, corner ledges and side rails (honouring rail notches);
   - parts in the plate gap vs the spacers and rim.
   Then render both jscad files with `@jscad/cli@1`. **Don't hand-edit the .jscad files.**
 - **Geometry:** flat floor (1.0). PCB **tilted 2.37° (rear up), parallel to the sloped top edge**, pivoting
   about the PCB rear edge. `Z_REAR` is auto-computed so the lowest part clears the floor by 0.5. That gives
   PCB underside z = 8.1 at the rear and 3.37 at the front. Wall tops end flush with the plate top
   (rear 12.26, front 7.40).
-- **Supports:** each screw pillar gets its own height, cut by the tilted PCB-underside plane. There are also
-  L-shaped **corner ledges** (1.6 wide, 10mm arms). Supports are intersected with the cavity, so they
-  never poke through the walls.
+- **Supports:** each screw pillar gets its own height, cut by the tilted PCB-underside plane. Supports are
+  intersected with the cavity, so they never poke through the walls. Along the walls:
+  - Front and rear: 10mm corner arms (1.6 wide).
+  - **Left and right: full-length side rails from corner to corner** (1.6 wide; user, 2026-11-13), so the
+    PCB edge rests on them along its whole length.
+  - Where a part below the PCB comes within `LEDGE_SIDE` (0.3) of a rail, the rail gets a **notch**: it reaches
+    `LEDGE_CLEAR` (0.6) past the part's ends, and its top drops to part bottom + `LEDGE_NOTCH_CLEAR` (0.6). The
+    user asked for deeper and longer notches on 2026-11-13 (both were 0.3). The rail only breaks where the
+    notched piece would be under `LEDGE_MIN_H` (1.0) above the floor. Ledges are `[x0, y0, x1, y1, drop]`.
+    - **Keep `LEDGE_SIDE` small.** At 0.6 it also caught parts that sit *beside* the rail: S20/S21's socket
+      bodies (0.48 off, 1.85 deep) and D16–D19 (0.50). Near the Enter key that notch was too low to keep, so the
+      right rail broke for 7.9 (y -92.6..-84.7).
+  - **Clearances to the rails** (survey 2026-11-13; the PCB is located by the screws to about ±0.1):
+    - 2u keys: S20/S21 socket bodies sit 0.48 beside the right rail (full height, nothing over it). The stab
+      housings (0.35 deep) are ≥3.2 from the rails/arms and 1.07 from the nearest pillars.
+    - Diodes are 0.50 beside the right rail.
+    - Pillars vs 1u socket pad-2 tabs (S4/S6/S8/S13/S16): only 0.03 in the model. The model uses the B.Fab
+      rect, which is ~1.1 longer than the real tab per the socket drawing, so the real gap is ~1.1. This
+      predates the rails.
+  - **One tray fits both boards:** each run also loads the other board (it re-runs itself with `--boxes` in
+    a subprocess) and notches for both. The notches are **1.0 deep** (tab 0.4 modelled + 0.6) and 3.75 long:
+    - Left: 5 under the KS-33 sockets' pad-1 tabs (y ≈ -87.3..-84.1 and every 19 toward the rear). Their pads
+      run to x 90.65, over the rail (90.0..91.6), so the solder sits over it; the tab tip itself ends at ~91.55.
+    - Right: 2 under the KS-33G MX socket tabs (y -28.1..-25.0, -9.1..-6.0). Those pads stop at x 165.36,
+      0.04 short of the rail, so these notches are only a guard.
+    - Both runs emit the same tray geometry (only the post order in `case_bottom.jscad` differs).
 - **Plate vs board verified 2026-11-07** (both boards): render `case_plate.jscad`, slice the STL (trimesh
   `mesh_plane` + shapely, installed with `pip --target` in a scratch dir) and compare with a pcbnew dump. All 21
   switch holes are exactly ±7.00 on their footprints; stab wings and notches are on the bar side, as on the
@@ -346,7 +369,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       drawing is identical to the Brown one, and its front view dimensions **12.15 from stem top to post tip**
       directly (stem top = 12.15 − 5.75 + 2.50 = 8.90 above the seat). Only the force differs (60 ±15 gf).
       Gateron's PCB layout there asks for a **Ø5.25** centre hole and Ø3.00 socket holes; ours drills Ø5.1
-      (plated) — open question for the user.
+      (plated). **Resolved 2026-11-08:** on the fabricated board the post goes in with slight play (user
+      test-fit), which is intended: the post only locates the switch; the plate clips and socket hold it.
   - **Screws go in from the top:** M2 countersunk (bevel-head) self-tapping screws. The user chose this
     because it's stronger: the thread grips the pillar, not 1.5mm of plate. The underside of the case shows
     **no holes**.
@@ -495,12 +519,14 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 
 - KS-33G board: measure the MX hotswap sockets (body height, outline) before ordering; the case model's socket
   is an estimate and must stay under the USB shell (1.72 below the PCB at `HEADER_GAP` 2.5), or raise `HEADER_GAP`.
-- Switch centre hole (KS-33 board): Gateron's KS-33 layout says Ø5.25; the footprint drills a plated Ø5.1 for a Ø5.05
-  post, which may come out too tight. Enlarging the drill (pad 5.6 unchanged) needs the user's OK, then a
-  DRC + `export_all.sh`.
 - Test-print the rear wall with the user's USB-C cable: cable heads bigger than 12.5×6.5 won't fit the scoop.
 - KS-33G: test-fit one 2u key (switch + KS-57 stab + keycap). Both ends must bottom out like the middle; the
   stab's travel is only ~0.05 more than the switch's nominal 3.2.
+- **Printed plate holes come out small (2026-11-08):** the user measured 13.5 on the 14.00 switch holes; the
+  committed `case_plate.stl` measures 14.000 on all 21 (corner vertices). The 13.5 is the elephant-foot lip
+  (plate prints upside down, so the bed face is the plate top); under the lip the hole is **13.8** (0.1 per
+  side of FDM shrink). User's choice: fix it in the slicer (elephant-foot compensation + XY hole compensation
+  ≈ 0.1 per side), keep `SW_CUT` at 14.00.
 - Before committing to the plate, test-print one stab cutout (now Gateron's suggested mounting, checked against
   the STEP; FDM holes print small, and the latch catch is only ~0.05).
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering
