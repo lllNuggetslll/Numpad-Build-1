@@ -1,0 +1,6 @@
+# GitHub Actions build matrix (see .github/workflows/build.yml)
+include:
+  - board: nice_nano_v2
+    shield: lp_numpad
+  - board: nice_nano_v2
+    shield: settings_reset   # flash this to wipe Bluetooth pairings

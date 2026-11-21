@@ -1,0 +1,6 @@
+if SHIELD_LP_NUMPAD
+
+config ZMK_KEYBOARD_NAME
+    default "LP Numpad"
+
+endif

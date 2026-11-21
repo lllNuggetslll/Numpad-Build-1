@@ -21,7 +21,7 @@ from the board itself, so the two always match.
 | PCB | Routed and DRC-clean. Gerbers are ready in `kicad/fab/numpad-gerbers.zip` (a PCBWay-ready package is `kicad/numpad.kicad_pcb.zip`). |
 | PCB, KS-33G variant | Routed and DRC-clean: `kicad/fab_ks33g/numpad_ks33g-gerbers.zip`, PCBWay package `kicad/numpad_ks33g.kicad_pcb.zip`. |
 | Case and plate | `case/case_bottom.stl`, `case/case_plate.stl` (the same case fits both boards) |
-| Firmware | Not written yet. ZMK needs a board definition using the pin map below. |
+| Firmware | ZMK v0.3 shield `lp_numpad` in `config/`, built by GitHub Actions (see §4). |
 
 Before printing the whole plate, **test-print one stabilizer cutout**. It follows Gateron's suggested mounting
 drawing and was checked against the stabilizer's 3D model, but 3D-printed holes usually come out a little
@@ -137,8 +137,11 @@ low-battery LED, which is on the front.
 
 ## 4. Firmware (ZMK)
 
-The matrix is 4 columns × 6 rows, with diodes oriented column → row. The pin map below differs from the
-original design, so the ZMK board/shield definition must match:
+The ZMK config is in `config/` (shield `lp_numpad`, pinned to ZMK v0.3, board `nice_nano_v2`):
+`boards/shields/lp_numpad/lp_numpad.overlay` (matrix pins), `lp_numpad.keymap`, `lp_numpad.conf`, `build.yaml`.
+GitHub Actions (`.github/workflows/build.yml`) builds it on every push that touches `config/`.
+
+The matrix is 4 columns × 6 rows, diodes column → row (`col2row`):
 
 | Signal | nice!nano pin |
 |---|---|
@@ -148,8 +151,24 @@ original design, so the ZMK board/shield definition must match:
 | Low-battery LED (active high) | P0 (nRF P0.08) |
 | Free spare | P1 |
 
+**Flashing:**
+1. Push, open the repo's **Actions** tab, open the latest "Build ZMK firmware" run and download the
+   `firmware` artifact. It holds `lp_numpad-nice_nano_v2-zmk.uf2` and `settings_reset-nice_nano_v2-zmk.uf2`.
+2. Plug the numpad into USB and **double-press the reset button** (paperclip through the rear wall). A drive
+   called `NICENANO` appears.
+3. First flash only: copy `settings_reset-…uf2` onto it. The drive vanishes and reboots. Double-press reset again.
+4. Copy `lp_numpad-…uf2` onto it. The drive vanishes when it's done. Windows may say the copy failed; that's normal.
+5. Turn the power switch on (so the battery charges and runs it off USB), then pair: Windows Settings →
+   Bluetooth & devices → Add device → Bluetooth → **LP Numpad**.
+
+**Keymap:** the top row is Esc, Tab, Backspace, Fn; below it a standard numpad. Hold **Fn** (top right) for:
+Esc = bootloader (re-flash without the paperclip), Tab = reboot, NumLock = clear the current Bluetooth
+pairing, `-` = toggle USB/BLE, 7/8/9 = Bluetooth profile 1/2/3, 1/2 = previous/next profile, 4/5/6 =
+previous/play/next track, 3 = mute, `+`/Enter = volume up/down, 0/. = output USB/BLE.
+The keypad keys need NumLock on; on Windows, numpad keys act as arrows when it's off.
+
 VCC (3.3 V out) isn't connected. ZMK has no built-in low-battery LED, so blinking P0 when the battery is low
-needs a small custom module. Keep it to a blink, because a steady LED drains the battery.
+needs a small custom module (not written yet). Keep it to a blink, because a steady LED drains the battery.
 
 ## Rebuilding from source
 

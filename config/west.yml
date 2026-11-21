@@ -1,0 +1,11 @@
+manifest:
+  remotes:
+    - name: zmkfirmware
+      url-base: https://github.com/zmkfirmware
+  projects:
+    - name: zmk
+      remote: zmkfirmware
+      revision: v0.3   # pinned: board name nice_nano_v2, Zephyr 3.5
+      import: app/west.yml
+  self:
+    path: config

@@ -1,0 +1,15 @@
+# Builds the ZMK firmware in config/ on every push that touches it.
+# Download the .uf2 files from the run's "firmware" artifact.
+name: Build ZMK firmware
+on:
+  push:
+    paths: ["config/**", ".github/workflows/build.yml"]
+  pull_request:
+    paths: ["config/**", ".github/workflows/build.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
+    with:
+      build_matrix_path: config/build.yaml

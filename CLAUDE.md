@@ -491,6 +491,23 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   ~39mm → nano pin 24. About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge
   current. The 2026-11-07 JST move added ~4mm to BAT_P (negligible).
 
+## Firmware (ZMK, added 2026-11-20)
+
+- `config/` (repo root, next to the ergogen `config.yaml`) is a ZMK user config, **pinned to `v0.3`** in
+  `config/west.yml` (Zephyr 3.5, board name `nice_nano_v2`; newer ZMK renamed boards). Shield `lp_numpad` in
+  `config/boards/shields/lp_numpad/`; keymap/conf in `config/`. `build.yaml` also builds `settings_reset`.
+- `.github/workflows/build.yml` calls ZMK's `build-user-config.yml@v0.3` with
+  `build_matrix_path: config/build.yaml`, on pushes touching `config/**`. **`config_path` must stay `config` at
+  the repo root**: the workflow runs `west init -l <config_path>` and `west build -s zmk/app` from the base
+  dir, so a nested config path (e.g. `firmware/config`) puts zmk in the wrong folder.
+- Pins are the Pro Micro D-numbers the ceoloide footprint labels them with: `&pro_micro 19` = P19 etc.
+  Matrix transform rows 0..5 = R1 (top, controller end) .. R6; cols 0..3 = C1..C4. Missing RC: (3,3), (5,1), (5,3).
+- **Build on GitHub** (user's choice). Local Docker build was abandoned 2026-11-20: Docker Desktop 4.76 crashes at
+  start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Dockerun\dockerInference`,
+  `%LOCALAPPDATA%\docker-secrets-engine\engine.sock`) that Windows refuses to delete (del/.NET/fsutil all fail with
+  error 1920); every forced quit leaves new ones. Renaming the parent folder gets past it once; the `*.stale-*`
+  folders next to them can be deleted after a reboot. A local build would use `zmkfirmware/zmk-build-arm:3.5`.
+
 ## Open items
 
 - If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and run `kicad/scripts/export_all.sh`.
@@ -534,5 +551,4 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 - Case: verify part heights against real parts (the nano header gap is still an estimate; socket height is confirmed at 1.85 by its drawing).
 - ZMK has no built-in low-battery LED. It needs a module or ~50 lines of custom code that blinks P0
   (nRF P0.08) when the battery is low. Blink only; leaving it on drains the battery.
-- The ZMK firmware pin mapping needs updating to match the remap above. (The VCC pin is no longer
-  connected, so don't rely on it.)
+- Low-battery LED module for ZMK (P0) is still unwritten.

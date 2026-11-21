@@ -21,3 +21,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# local ZMK builds
+firmware/
