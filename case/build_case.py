@@ -21,7 +21,8 @@ ARGS = [a for a in sys.argv[1:] if a != "--boxes"]
 VARIANT = ARGS[0] if ARGS else ""
 if VARIANT not in ("", "ks33g"):
     raise SystemExit("unknown variant %r (use ks33g or nothing)" % VARIANT)
-BOARD = os.path.join(HERE, "..", "output", "pcbs",
+# NUMPAD_PCB_DIR overrides the board folder (e.g. to check freshly generated, unrouted boards)
+BOARD = os.path.join(os.environ.get("NUMPAD_PCB_DIR") or os.path.join(HERE, "..", "output", "pcbs"),
                      "numpad_ks33g.kicad_pcb" if VARIANT else "not_about_money.kicad_pcb")
 OUT = os.path.join(HERE, VARIANT) if VARIANT else HERE
 os.makedirs(OUT, exist_ok=True)
@@ -122,12 +123,13 @@ PWR_BODY = (6.65, 2.7)
 JST_H, JST_PLUG = 4.8, (9.6, 3.0, 5.8, 4.5)
 # nice!nano v2 from its CAD model ("nice!nano v2.step", GCT USB4520-03-0-A mid-mount USB-C). Mounted
 # components-away (reverse_mount: false), so the bare face is toward our PCB, HEADER_GAP below it
-# (2.5 plastic header spacers). PCB 17.8 x 33.2 x 1.4; parts up to 1.1 above its outer face.
-# USB-C shell 8.94 x 3.16, from 0.783 *above* the bare face (toward our PCB) to 1.977 past the outer
-# face; mouth 4.747 past the first header pin row, 6.5 deep, centred on the board width (+-0.075).
-HEADER_GAP, NANO_T, NANO_PARTS_H = 2.5, 1.4, 1.1
+# (stock nano headers, measured by the user 2026-11-20: 2.3 board to board). PCB 17.8 x 33.2 x 1.4; parts up
+# to 1.1 above its outer face. USB-C shell measured 9.0 x 3.3 (CAD model: 8.94 x 3.16). The model puts it 0.783
+# into the header gap, but on the real nano its near side is flush with the bare face (user, 2026-11-20; shell
+# bottom measured 7.2 below our PCB top = 1.6 + 2.3 + 3.3), so USB_INTO_GAP = 0; mouth 4.747 past the first header pin row, 6.5 deep, centred on the board width (+-0.075).
+HEADER_GAP, NANO_T, NANO_PARTS_H = 2.3, 1.4, 1.1
 NANO_W, NANO_L, NANO_EDGE = 17.8, 33.2, 3.79     # NANO_EDGE: first pin row to the USB-end board edge
-USB_W, USB_H, USB_D, USB_OUT, USB_INTO_GAP = 8.94, 3.16, 6.5, 4.747, 0.783
+USB_W, USB_H, USB_D, USB_OUT, USB_INTO_GAP = 9.0, 3.3, 6.5, 4.747, 0.0
 # Preview offset: slides the nano toward the top edge (KiCad -y) in the case model only, to try a move
 # before changing the PCB. Keep it 0 when the board is current (the 1.5 move is now in config.yaml).
 NANO_SHIFT = 0.0
@@ -143,6 +145,8 @@ LED_H = 1.1                # 0603 status LED on the PCB *top*: allow any 0603 (t
 LED_POCKET = (3.8, 2.0)    # counterbore in the plate underside over the LED + its pads (blind, PLATE_SKIN left)
 LED_HOLE_R = 0.9           # light hole through the plate above it, under the keycap-gap crossing
 R0603_H = 0.45             # 0603 resistor on the back
+C0603_H = 0.95             # 0603 ceramic capacitor on the back (1 uF X5R is 0.8 +-0.1)
+IC_H = 1.0                 # LTC4411 ThinSOT-23-5, 1.00 max
 
 mm = pcbnew.ToMM
 b = pcbnew.LoadBoard(BOARD)
@@ -283,7 +287,10 @@ for f in b.GetFootprints():
         lw, lh = LED_POCKET if abs(f.GetOrientationDegrees()) % 180 < 45 else LED_POCKET[::-1]
         reliefs.append([x - lw / 2, -y - lh / 2, x + lw / 2, -y + lh / 2])
     elif "smd_0603" in fid:
-        box(ref, "part", x - 0.8, y - 0.4, x + 0.8, y + 0.4, 0, R0603_H)
+        box(ref, "part", x - 0.8, y - 0.4, x + 0.8, y + 0.4, 0, C0603_H if ref.startswith("C") else R0603_H)
+    elif "ideal_diode_sot23_5" in fid:
+        bb = pads(f, smd)                         # leads reach the pad outer ends; body 2.9 x 1.6
+        box(ref, "part", bb[0], bb[1], bb[2], bb[3], 0, IC_H)
     elif "reset_switch" in fid:
         box(ref, "part", x - 2.35, y - 1.75, x + 2.35, y + 1.75, 0, RST_H)
         box(ref + "_plunger", "actuator", x - 1.3, y - 2.75, x + 1.3, y - 1.75, *RST_PLUNGER)

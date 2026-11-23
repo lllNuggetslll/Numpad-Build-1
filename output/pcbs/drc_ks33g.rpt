@@ -1,7 +1,7 @@
 ** Drc report for numpad_ks33g.kicad_pcb **
-** Created on 2026-11-07T21:56:03-0800 **
+** Created on 2026-11-23T10:34:45-0800 **
 
-** Found 72 DRC violations **
+** Found 76 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(147.0000 mm, 61.2500 mm): Segment on Edge.Cuts
@@ -42,12 +42,12 @@
 [lib_footprint_issues]: The current configuration does not include the library 'custom'.
     Local override; warning
     @(138.0000 mm, 43.0000 mm): Footprint S12
-[lib_footprint_issues]: Footprint 'power_switch_smd_side' not found in library 'ceoloide'.
-    Local override; warning
-    @(148.5000 mm, -2.9550 mm): Footprint PWR1
 [lib_footprint_issues]: Footprint 'reset_switch_smd_side' not found in library 'ceoloide'.
     Local override; warning
     @(137.2000 mm, -2.5000 mm): Footprint RST1
+[lib_footprint_issues]: The current configuration does not include the library 'custom'.
+    Local override; warning
+    @(155.0000 mm, -1.9000 mm): Footprint IC1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(126.1000 mm, 60.7500 mm): Footprint D8
@@ -57,6 +57,9 @@
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(145.1000 mm, 79.7500 mm): Footprint D11
+[lib_footprint_issues]: The current configuration does not include the library 'custom'.
+    Local override; warning
+    @(128.5000 mm, 71.5000 mm): Footprint R1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(145.1000 mm, 41.7500 mm): Footprint D13
@@ -120,15 +123,15 @@
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(126.9000 mm, 3.7500 mm): Footprint D21
-[lib_footprint_issues]: The current configuration does not include the library 'custom'.
-    Local override; warning
-    @(128.5000 mm, 71.5000 mm): Footprint R1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(126.9000 mm, 22.7500 mm): Footprint D20
 [lib_footprint_issues]: The current configuration does not include the library 'custom'.
     Local override; warning
     @(119.0000 mm, 81.0000 mm): Footprint S6
+[lib_footprint_issues]: The current configuration does not include the library 'custom'.
+    Local override; warning
+    @(148.5000 mm, -2.9550 mm): Footprint PWR1
 [lib_footprint_issues]: Footprint 'diode_tht_sod123' not found in library 'ceoloide'.
     Local override; warning
     @(107.1000 mm, 41.7500 mm): Footprint D4
@@ -152,6 +155,9 @@
     @(138.0000 mm, 24.0000 mm): Footprint S13
 [lib_footprint_issues]: The current configuration does not include the library 'custom'.
     Local override; warning
+    @(158.8000 mm, -0.9000 mm): Footprint C1
+[lib_footprint_issues]: The current configuration does not include the library 'custom'.
+    Local override; warning
     @(157.0000 mm, 24.0000 mm): Footprint S15
 [lib_footprint_issues]: The current configuration does not include the library 'custom'.
     Local override; warning
@@ -168,6 +174,9 @@
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 KS-33G' on B.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(153.1500 mm, -0.4500 mm): Segment on B.Silkscreen
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(125.9100 mm, 24.4500 mm): Footprint Text 'R6' of MCU1
@@ -189,6 +198,9 @@
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; warning
     @(125.9100 mm, 6.6700 mm): Footprint Text 'GN' of MCU1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(153.5000 mm, -2.9550 mm): Footprint Text 'OFF' of PWR1
 [silk_overlap]: Silkscreen overlap
     Rule: board setup constraints silk; warning
     @(147.5000 mm, 29.5000 mm): PCB Text ''Not about money' v0.1 KS-33G' on B.Silkscreen

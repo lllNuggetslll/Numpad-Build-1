@@ -366,12 +366,15 @@ pcbs:
 
       on_off_switch: &fp_on_off_switch
         # Back side, lever pointing up, 20mm from the right edge
-        what: ceoloide/power_switch_smd_side
+        # custom copy: the free throw (RAW's OFF position) carries CHG_IN, so the ideal diode below can
+        # charge the battery while the switch is off
+        what: custom/power_switch_smd_side
         where: matrix_c4_r1
         params:
           side: B
           from: BAT_P
           to: RAW
+          off: CHG_IN
         adjust:
           shift: [-8.5, 9.705 - (2 - board_expand)]
           rotate: 90
@@ -402,6 +405,36 @@ pcbs:
           shift: [(u + extra_spread) / 2, -(u + extra_padding) / 2 - 2]
           rotate: 90
 
+      charge_diode: &fp_charge_diode
+        # LTC4411 ideal diode, back side, right of the power switch (added 2026-11-23). Switch ON: RAW-BAT_P
+        # direct, this sits idle (IN floats). Switch OFF: RAW-CHG_IN, so with USB in, the nano's charger
+        # charges the battery through it (28 mV regulated drop, ~4.17 V full); with USB out it blocks the
+        # battery from the nano (< 1 uA leakage).
+        what: custom/ideal_diode_sot23_5
+        where: matrix_c4_r1
+        params:
+          side: B
+          IN: CHG_IN
+          OUT: BAT_P
+          GND: GND
+        adjust:
+          shift: [-2.0, 6.9]
+          rotate: 180
+
+      charge_diode_cap: &fp_charge_diode_cap
+        # 1 uF X5R/X7R ceramic on the LTC4411's OUT (datasheet requirement), next to its OUT pin
+        what: custom/smd_0603
+        where: matrix_c4_r1
+        params:
+          designator: C
+          value: 1uF X5R 10V
+          side: B
+          polarized: false
+          from: GND
+          to: BAT_P
+        adjust:
+          shift: [1.8, 5.9]
+
       battery_led: &fp_battery_led
         # Low-battery LED, front side, at the keycap-gap crossing between c2/c3 and r4/r5.
         # Any 0603 LED up to ~1.4 tall (planned: Lite-On LTST-C191KRKT, 0.55): the plate has a 0.6 deep
@@ -410,6 +443,7 @@ pcbs:
         where: matrix_c2_r4
         params:
           designator: LED
+          value: LTST-C191KRKT
           side: F
           from: LED_A
           to: GND
@@ -422,6 +456,7 @@ pcbs:
         where: matrix_c2_r4
         params:
           designator: R
+          value: 1k
           side: B
           polarized: false
           from: P0
@@ -513,6 +548,8 @@ pcbs:
           rotate: 90
       mcu: *fp_mcu
       on_off_switch: *fp_on_off_switch
+      charge_diode: *fp_charge_diode
+      charge_diode_cap: *fp_charge_diode_cap
       reset_switch: *fp_reset_switch
       battery_connector: *fp_battery_connector
       battery_led: *fp_battery_led

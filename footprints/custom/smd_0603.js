@@ -6,6 +6,7 @@
 //    polarized: default true; adds a cathode bar on the silkscreen next to the `to` pad
 //    from: net on pad 1 (LED anode)
 //    to: net on pad 2 (LED cathode)
+//    value: part value for the Value property / BOM (e.g. the LED part number, 1k, 1uF)
 //
 // Pads follow KiCad's R_0603_1608Metric_Pad1.05x0.95_HandSolder. On side B the pads are
 // mirrored so the part reads the same from the back.
@@ -15,6 +16,7 @@ module.exports = {
     designator: 'LED',
     side: 'F',
     polarized: true,
+    value: '',
     from: { type: 'net', value: undefined },
     to: { type: 'net', value: undefined }
   },
@@ -37,6 +39,7 @@ module.exports = {
             ${p.ref_hide}
             (effects (font (size 0.8 0.8) (thickness 0.12)) ${s == 'B' ? '(justify mirror)' : ''})
         )
+        ${p.value ? `(property "Value" "${p.value}" (at 0 1.5 ${p.r}) (layer "${s}.Fab") (effects (font (size 0.8 0.8) (thickness 0.12)) ${s == 'B' ? '(justify mirror)' : ''}))` : ''}
         (attr smd)
         ${silk(-0.25, -0.7, 0.25, -0.7)}
         ${silk(-0.25, 0.7, 0.25, 0.7)}

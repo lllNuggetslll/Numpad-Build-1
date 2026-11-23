@@ -9,7 +9,7 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 |---|---|---|---|
 | 1 | PCB | 2-layer, 1.6 mm FR-4, from `kicad/fab/numpad-gerbers.zip` (KS-33 switches) or `kicad/fab_ks33g/numpad_ks33g-gerbers.zip` (KS-33G switches) | Any fab (JLCPCB, PCBWay, …). The 3 stabilizer cutouts are in the board outline, so no extra milling is needed. |
 | 1 | Controller | **nice!nano v2** | Wireless nRF52840 (ZMK). |
-| 16 | Header pins | 2.54 mm single-row male headers with standard **2.5 mm** plastic | Only 16 of the 24 positions are used (see the README). Buy a 1×40 strip. |
+| 16 | Header pins | 2.54 mm single-row male headers; the ones that come with the nice!nano are fine | Only 16 of the 24 positions are used (see the README). The case's USB window expects the nano **2.3 mm** off the PCB (±0.2), which is how the stock nano headers seat. |
 | 21 | Hotswap sockets | **Gateron Low Profile Hot-swap 2.0, KS-2P02B01-02** | Must be the **low-profile** version (-02). The regular -01 socket doesn't fit. Sold in packs of 70/110. **KS-33G board:** use MX-pattern sockets instead (Gateron KS-2P02B01-01 or Kailh CPG151101S11), and check they're under ~2.3 mm tall. |
 | 21 | Diodes | 1N4148W, **SOD-123** | |
 | 1 | Reset button | **Panasonic EVQ-PUA02K** (or EVQ-PUC02K / EVQ-PUL02K) | Side-push SMD, 4.7 × 3.5 mm. PUA02K is the easy-to-find one; it has no locating pegs, so the two small holes stay empty. Not EVQ-PUD02K (3.2 mm deep). |
@@ -17,6 +17,8 @@ Quantities are per keyboard. Buy a few spares of the small parts.
 | 1 | Battery connector | **JST PH S2B-PH-K-S** | 2-pin, 2.0 mm, side entry, through-hole. |
 | 1 | Low-battery LED | **Lite-On LTST-C191KRKT** (0603, red, 0.55 mm tall) | Any 0603 LED up to ~1.7 mm tall fits. |
 | 1 | LED resistor | 1 kΩ, 0603 | |
+| 1 | Charging ideal diode (IC1) | **Analog Devices LTC4411ES5** (ThinSOT-23-5; e.g. LTC4411ES5#TRMPBF, LCSC C462651) | Back side, right of the power switch. Lets USB charge the battery with the power switch off. Boards from 2026-11-23 on. |
+| 1 | Capacitor (C1) | 1 µF, 0603, X5R or X7R, ≥ 10 V | The LTC4411's output capacitor, next to it. |
 | 1 | Battery | **301230 LiPo**, 3.7 V, ~110 mAh, 3 × 12 × 30 mm, with protection circuit and a **JST PH 2.0** plug | The case has a pocket sized for this cell. **Check the plug polarity** before connecting it (see the README). |
 
 ## Switches and keycaps

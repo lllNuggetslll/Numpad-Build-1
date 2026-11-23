@@ -138,8 +138,8 @@ drawing is page 9, vector with no dimension text, so render it with pymupdf.
     x +7.9 (`diodes_mcu`) for body room.
   - "0" key: 180. Tall keys: 90.
 - **MX socket body is an estimate** (no drawing found; Kailh's PDF has an expired cert): `build_case.py ks33g`
-  uses two blocks around the barrels plus the pad tabs, 1.85 tall. Under the nano it must stay below the USB shell, 1.72 below the PCB at `HEADER_GAP` 2.5: the 1.85 estimate is 0.13 into it (S18), see Open items.
-- `build_case.py ks33g` → (2026-11-07, with the new part-vs-part check) S18 socket vs USB shell (Open items), otherwise clean since the JST move; same Z_REAR 8.10, battery spot and screws. The tray and plate
+  uses two blocks around the barrels plus the pad tabs, 1.85 tall. Under the nano it must stay below the USB shell, 2.30 below the PCB (`HEADER_GAP` 2.3, shell flush with the nano's bare face): the 1.85 estimate clears it by 0.45 (S18).
+- `build_case.py ks33g` → clean (2026-11-20, after the measured nano gap; the S18-vs-USB-shell clash is gone); same Z_REAR 8.10, battery spot and screws. The tray and plate
   geometry are identical to the KS-33 case (only array order differs), so **one case fits both boards**. It
   writes to `case/ks33g/`, which was deleted after the check; regenerate it when needed.
 - Routed 2026-11-01: 0 unconnected, no errors (cosmetic lib/silk warnings only). 18 vias, ~1.93 m of track.
@@ -185,7 +185,8 @@ Instead, `footprints/custom/mcu_nice_nano_sparse.js` (a copy of the ceoloide foo
   - **Socketing (female/male headers), checked 2026-11-04:** the kept pins form a 3-pin run (USB end) and a
     5-pin run on each side. Use 3- and 5-pin segments: a full 12-pin strip's plastic would land on S10's
     socket body (left row) and S16's solder tab (right row). The 1.0 drills take normal header tails.
-    The case (`HEADER_GAP`, now 2.5) is unchanged up to a 3.0 board-to-board gap. Above that it grows 1:1
+    The case (`HEADER_GAP`, now the measured 2.3) is unchanged up to a 3.0 board-to-board gap (re-checked
+    2026-11-20 with the flush USB shell: 2.4/2.5/3.0 give the same Z_REAR; the nano parts are the limiter). Above that it grows 1:1
     (3.5 → +0.5, 5.0 → +2.0, 8.5-tall female + 2.5 male spacer = 11 → +8.0), with no collisions; set
     `HEADER_GAP` to the real seated height and re-run `build_case.py`.
   - Candidate kit: Typeractive "Machine Sockets and Pins" (2× 12-pin Mill-Max 310-series machined socket
@@ -219,7 +220,8 @@ Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-arc
     the KS-33G variant (see its section). ergogen now emits both boards.
   - **Never run `ergogen -o output --clean`**: it empties the folder, wiping the routing (and anything else
     in `output/`). Generate into a scratch dir and copy `pcbs/ outlines/ cases/` over.
-  - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb`.
+  - `case/build_case.py` reads `output/pcbs/not_about_money.kicad_pcb` (env `NUMPAD_PCB_DIR` overrides the folder,
+    e.g. to check fresh unrouted boards before routing).
 - `kicad/`: the user's KiCad project (moved from `output/numpad/` on 2026-10-02, so ergogen can't wipe it).
   - `numpad.kicad_pcb` is a copy of the routed board. DRC is clean under the project's own rules (edge
     clearance 0.2): 0 violations, 0 unconnected.
@@ -248,7 +250,37 @@ Untracked leftovers (KiCad backup zips, .kicad_prl) were moved to `../numpad-arc
   `board.svg`).
 - `README.md` (build + assembly instructions), `SHOPPING_LIST.md` (BOM).
 
+## Charging with the switch off (added 2026-11-23, both boards)
+
+- **Why:** the nano's charger output and its power input are the same pin (B+ = our RAW). The power switch sat
+  between RAW and BAT_P, so OFF also cut the charger off from the battery.
+- **Switch pins** (`footprints/custom/power_switch_smd_side.js`, ceoloide copy + `off` net param): pad 2 = RAW =
+  **common**, pad 1 = BAT_P (ON throw, KiCad 146.25,-1.22), pad 3 = **CHG_IN** (OFF throw, 150.75,-1.22; was
+  unconnected). Footprint notes: "to = pin 2 on both sides", `invert_behavior` (default true) picks which throw is
+  `from`. Not checked on the user's real MSK-12C02-style switch → ask for a continuity check (OFF: pad 2-pad 3).
+- **IC1 = LTC4411** ideal diode (ThinSOT-23-5, `footprints/custom/ideal_diode_sot23_5.js`): IN = CHG_IN, OUT =
+  BAT_P, pins 2+3 (GND, CTL) = GND (CTL is active-high shutdown), pin 4 STAT open. At KiCad (155.0,-1.9), rot 180,
+  pin 1 nearest the switch. **C1** = 1 uF 0603 on OUT (datasheet: 1 uF low-ESR ceramic), (158.8,-0.9).
+  - Regulated 28 mV forward drop → battery ends at ~4.17 V (~97 %) when charged with the switch off; switch ON =
+    direct, 100 %. Reverse leakage < 1 uA; 40 uA Iq only while USB is in and the switch is off (IN floats when ON).
+  - **Rejected: TI LM66100** (and similar comparator "ideal diodes"). With CE tied to VOUT it only turns off at
+    VOUT > VIN + 35 mV typ, i.e. a reverse current of ~0.5–1 A (IRCB). With a light nano load it stays on, so
+    after one charge with the switch off, unplugging would leave the battery powering the nano. Needs a
+    forward-regulating part (LTC4411/LTC4412).
+  - Plain Schottky alternative (bodge for old boards): anode pad 3, cathode pad 1; ~85 % charge.
+- Case: `build_case.py` models IC1 (pad extents, `IC_H` 1.0) and 0603 caps (`C0603_H` 0.95, refs starting "C").
+  Both boards: no collisions, Z_REAR/battery/screws unchanged; the tray/plate numbers are identical to before.
+- Routing recipe (scripts were scratch-only): regenerate with ergogen; copy the new/changed footprints
+  (compare FPID, value, position, pads) into the routed board with `pcbnew.FOOTPRINT(f)` + re-map pad nets by
+  name (add new nets with `NETINFO_ITEM`); lock all tracks; `keepout_dsn.py` → freerouting → `ImportSpecctraSES`
+  (locked tracks survive). **Freerouting also re-emits junk on untouched nets** (zero-length segments, short
+  duplicates → `track_dangling`): keep only new tracks inside the work area, drop the rest. One T-junction onto
+  the middle of an old segment was also flagged dangling; re-anchor it at the old segment's endpoint.
+- `smd_0603` got a `value` param (Value property → the PCBWay BOM no longer lumps LED1 and R1 together).
+
 ## Ergogen gotchas
+
+- **Designator `U` evaluates to the unit `u` (19.05)**, so parts came out as "19.051". The LTC4411 uses `IC`.
 
 - Custom footprints only load when the ergogen input is a **directory** (config.yaml + footprints/),
   not a plain yaml file. Copy both into a scratch dir, then run `ergogen <dir> -o output_xxx --clean`
@@ -315,6 +347,12 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   about the PCB rear edge. `Z_REAR` is auto-computed so the lowest part clears the floor by 0.5. That gives
   PCB underside z = 8.1 at the rear and 3.37 at the front. Wall tops end flush with the plate top
   (rear 12.26, front 7.40).
+- **Measured nano mount (user, 2026-11-20, stock nano headers):** **2.3 board to board**, and the USB shell's
+  near side is **flush with the nano's bare face** (the STEP model's 0.783 into the gap is wrong for the real
+  part), and the shell measures **9.0 × 3.3** (STEP: 8.94 × 3.16). Shell bottom measured 7.2 below our PCB top
+  = 1.6 + 2.3 + 3.3. `build_case.py`: `HEADER_GAP` 2.3, `USB_INTO_GAP` 0, `USB_W`/`USB_H` 9.0/3.3. The case is unchanged except the USB window/scoop, 0.58 lower than the
+  previous committed case; the scoop bottom ends ~1.0 above the case bottom at the rear. Window clearance is 0.25 per
+  side, so other headers must seat within ~±0.2 of 2.3.
 - **Supports:** each screw pillar gets its own height, cut by the tilted PCB-underside plane. Supports are
   intersected with the cavity, so they never poke through the walls. Along the walls:
   - Front and rear: 10mm corner arms (1.6 wide).
@@ -389,7 +427,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   bosses, rim, pillars and ledges. Every stab part that reaches into the PCB was verified to fall inside the
   PCB cutouts (point-in-polygon test against `assembly.json` `poly_holes`).
 - **Rear-wall windows:** closed on all four sides (the user does NOT want open-topped slots). Each is part
-  outline + 0.4 per side, in the board frame. USB-C 8.94×3.16 (`USB_GAP` 0.25 per side, from the CAD model) at the back of a **cable-head scoop**
+  outline + 0.4 per side, in the board frame. USB-C 9.0×3.3 (measured; `USB_GAP` 0.25 per side) at the back of a **cable-head scoop**
   (`USB_SCOOP` 12.5×6.5 r1.5, user's size 2026-10-04). The user does NOT want a through-hole: the scoop is a
   recess from the outer face down to a back wall **flush with the USB mouth**. If the mouth is behind the
   inner wall face, a **collar** (`COLLAR_*`, scoop + 1.2 margin, from the floor to 0.2 below the PCB) is added
@@ -422,7 +460,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       assembly transforms, sampling circle arcs). PCB 17.8×33.2×**1.4**; parts ≤1.1 tall. USB-C is a GCT
       USB4520-03-0-A mid-mount: shell 8.94×3.16, sticks **0.783 out of the bare (our-PCB-facing) face** and 0.977
       past the parts face; mouth 4.747 past the first header pin row (0.96 past the nano edge), centred ±0.075.
-      Our mount is components-away (`reverse_mount: false`), so the shell sits 1.72..4.88 below our PCB underside.
+      Our mount is components-away (`reverse_mount: false`), so the shell sits 1.72..4.88 below our PCB underside **in the model**; the real part sits 2.30..5.60 (measured, see
+      "Measured nano mount").
       vs the old guess this moved the USB window 0.77 toward the PCB and the mouth 0.59 inward.
       **Nano LEDs** (from the STEP, 2026-10-04): two 0603s on the parts face, one on each side of the USB shell,
       7.4..9.0 in from the nano's USB edge at ±5.1..5.9 off its centreline. On our board that is about KiCad
@@ -440,7 +479,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
       than the official footprint's B.Fab rects (-9.55 / +7.75) used for `SOCKET_TABS`.
       (The MX-profile sibling KS-2P02B01-01 has 6.35/2.54 holes and does not fit the KS-33 footprint.)
   - Still estimated:
-    - nice!nano header gap 2.5 (standard spacer, but solder seating varies); keycap height.
+    - keycap height. (The nano header gap is measured: 2.3 on the stock headers.)
 - **Battery:** `case/battery_fit.py [floor_pocket_depth]` searches where LiPo pouch cells fit under the
   tilted PCB, using assembly.json. Re-run it after any change.
   - Results (2026-10-05, no pocket): 301230 (30×12×3, ~110mAh, nice!nano's recommended cell) and 401230
@@ -488,7 +527,8 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   `kicad-cli pcb export drill --output fab/ board.kicad_pcb`, then zip. Design values (0.2mm track on
   every net, power included; 0.2mm clearance, 0.6/0.3 via) are within any fab's limits.
 - Power path (measured 2026-10-04, JST then at 128.5,32.5): JST → BAT_P ~52mm, 1 via → power switch → RAW
-  ~39mm → nano pin 24. About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge
+  ~39mm → nano pin 24. Switch OFF + USB: RAW → switch pad 3 → CHG_IN → IC1 → BAT_P (see "Charging with the
+  switch off"). About 0.22 Ω in total at 1oz, so roughly 22 mV drop at the nano's 100 mA charge
   current. The 2026-11-07 JST move added ~4mm to BAT_P (negligible).
 
 ## Firmware (ZMK, added 2026-11-20)
@@ -503,17 +543,20 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
 - Pins are the Pro Micro D-numbers the ceoloide footprint labels them with: `&pro_micro 19` = P19 etc.
   Matrix transform rows 0..5 = R1 (top, controller end) .. R6; cols 0..3 = C1..C4. Missing RC: (3,3), (5,1), (5,3).
 - **Build on GitHub** (user's choice). Local Docker build was abandoned 2026-11-20: Docker Desktop 4.76 crashes at
-  start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Dockerun\dockerInference`,
+  start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Docker
+un\dockerInference`,
   `%LOCALAPPDATA%\docker-secrets-engine\engine.sock`) that Windows refuses to delete (del/.NET/fsutil all fail with
   error 1920); every forced quit leaves new ones. Renaming the parent folder gets past it once; the `*.stale-*`
   folders next to them can be deleted after a reboot. A local build would use `zmkfirmware/zmk-build-arm:3.5`.
 
 ## Open items
 
+- **Charging circuit (2026-11-23), before ordering:** have the user check on a built board that the switch's
+  OFF position connects pad 2 (RAW) to pad 3: of the switch's three signal legs along the board edge, those are
+  the two 1.5 mm apart (BAT_P's leg is 3 mm away). If it doesn't, IC1 never
+  sees the charger (nothing breaks, it just doesn't charge with the switch off).
+
 - If the board changes again, re-route it, copy it into `kicad/numpad.kicad_pcb` and run `kicad/scripts/export_all.sh`.
-- **KS-33G: S18's MX socket overlaps the nano's USB shell by 0.13** (shell 1.72 below the PCB at
-  `HEADER_GAP` 2.5, socket est. 1.85), reported by `build_case.py ks33g`'s part-vs-part check. Raise
-  `HEADER_GAP` to ≥ 2.7 (socketed headers do that) or confirm the socket height.
 
 ## JST battery connector move (2026-11-07, done)
 
@@ -535,7 +578,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   of one part may).
 
 - KS-33G board: measure the MX hotswap sockets (body height, outline) before ordering; the case model's socket
-  is an estimate and must stay under the USB shell (1.72 below the PCB at `HEADER_GAP` 2.5), or raise `HEADER_GAP`.
+  is an estimate and must stay under the USB shell (2.30 below the PCB on the stock headers).
 - Test-print the rear wall with the user's USB-C cable: cable heads bigger than 12.5×6.5 won't fit the scoop.
 - KS-33G: test-fit one 2u key (switch + KS-57 stab + keycap). Both ends must bottom out like the middle; the
   stab's travel is only ~0.05 more than the switch's nominal 3.2.
@@ -548,7 +591,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   the STEP; FDM holes print small, and the latch catch is only ~0.05).
 - Assembly reminder: sand 1.1mm off the stab-facing solder tab of the three 2u sockets before soldering
   (resolved by the user's choice; see Case → Socket model).
-- Case: verify part heights against real parts (the nano header gap is still an estimate; socket height is confirmed at 1.85 by its drawing).
+- Case: verify part heights against real parts (the nano header gap is measured at 2.3; socket height is confirmed at 1.85 by its drawing).
 - ZMK has no built-in low-battery LED. It needs a module or ~50 lines of custom code that blinks P0
   (nRF P0.08) when the battery is low. Blink only; leaving it on drains the battery.
 - Low-battery LED module for ZMK (P0) is still unwritten.

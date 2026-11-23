@@ -37,7 +37,7 @@ See **[SHOPPING_LIST.md](SHOPPING_LIST.md)**.
 |---|---|
 | `config.yaml` | Ergogen source of truth for the PCB: layout, footprints, outline. |
 | `footprints/ceoloide/` | Upstream ceoloide footprints. |
-| `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED and resistor; `switch_mx_ks33g.js` is the KS-33G switch (MX sockets, Ø5.0 centre). |
+| `footprints/custom/` | Local footprints. `mcu_nice_nano_sparse.js` adds an `omit_pins` option; `smd_0603.js` is for the LED, resistor and capacitor; `ideal_diode_sot23_5.js` is the LTC4411 charging ideal diode; `power_switch_smd_side.js` is ceoloide's switch with a net on its OFF pin; `switch_mx_ks33g.js` is the KS-33G switch (MX sockets, Ø5.0 centre). |
 | `output/` | **Current board.** `pcbs/not_about_money.kicad_pcb` is routed (DRC report `pcbs/drc.rpt`, preview `routed.svg`); `not_about_money.unrouted.kicad_pcb` is the raw ergogen output. |
 | `kicad/` | KiCad project for the current board (with the project's 0.2 mm edge-clearance rule), `fab/` (gerbers + drill + zip), and the PCBWay package `numpad.kicad_pcb.zip`. The KS-33G variant is a second project in the same folder: `numpad_ks33g.kicad_pro`, `fab_ks33g/`, `numpad_ks33g.kicad_pcb.zip`. |
 | `case/build_case.py` | Generates the case from the board: `case_bottom.jscad`, `case_plate.jscad`, `assembly.json`. |
@@ -69,7 +69,8 @@ same board.
   actuator only has about 3.25 mm before it hits its housing. A long-travel switch could leave the ends of a 2u
   key stopping ~0.15 mm short.
 - **Measure the MX sockets before you order the board.** The socket body height is an estimate (1.85 mm). It
-  has to stay under ~2.3 mm, because two of the sockets sit under the nice!nano on its 2.5 mm headers.
+  has to stay under ~2.3 mm, because two of the sockets sit under the nice!nano, whose USB-C shell starts
+  2.3 mm below the PCB on its stock headers.
 - The KS-33G's centre post reaches 3.70 mm below its seat (0.45 mm more than the KS-33). The case check
   still finds no collisions, and the battery spot and screw lengths don't change.
 
@@ -99,7 +100,9 @@ low-battery LED, which is on the front.
    tab. Without this, that tab hits the stabilizer housing. Dry-fit each socket to find the right tab, then
    clean and tin it.
 2. **Back side SMD parts:** solder the 21 diodes (mind the cathode band), the 21 hotswap sockets, the reset
-   button, the power switch, and the 1 kΩ resistor.
+   button, the power switch, the 1 kΩ resistor, and the charging parts right of the power switch: **IC1**
+   (LTC4411, SOT-23-5; pin 1 is the corner marked on the silkscreen, by the switch) and **C1** (1 µF 0603).
+   These let USB charge the battery with the power switch **off** (see *Charging* below).
 3. **Front side:** solder the 0603 LED. It sits under a hole in the plate between the keycaps.
 4. **Battery connector:** solder the JST PH on the back, then **trim its pins flush** on the front. They're
    3.4 mm long and poke 1.8 mm through; the plate only leaves 1.9 mm above the PCB.
@@ -108,7 +111,8 @@ low-battery LED, which is on the front.
      fitted. Leave it off and
      solder the battery leads straight into its two holes (+ into the oval pad 2, − into pad 1).
 5. **nice!nano:** the controller mounts on the back, components facing **away** from the PCB, on standard
-   male header pins with 2.5 mm plastic spacers.
+   the male header pins that come with it. They seat it 2.3 mm off the PCB (measured), which is what the
+   case's USB-C window is built for; other headers must seat it within ±0.2 mm of that.
    - Fit pins **only** where the PCB has holes: 16 pins (RAW, RST, GND ×2, P0, P1, P4–P8, P14–P16, P18,
      P19). The other 8 positions sit over switch pads and are left off on purpose.
    - Trim the pins on the front to about 1.4 mm, **except** the 7 pins in the row nearer the board's left
@@ -158,8 +162,18 @@ The matrix is 4 columns × 6 rows, diodes column → row (`col2row`):
    called `NICENANO` appears.
 3. First flash only: copy `settings_reset-…uf2` onto it. The drive vanishes and reboots. Double-press reset again.
 4. Copy `lp_numpad-…uf2` onto it. The drive vanishes when it's done. Windows may say the copy failed; that's normal.
-5. Turn the power switch on (so the battery charges and runs it off USB), then pair: Windows Settings →
-   Bluetooth & devices → Add device → Bluetooth → **LP Numpad**.
+5. Pair: Windows Settings → Bluetooth & devices → Add device → Bluetooth → **LP Numpad** (with USB unplugged,
+   the power switch must be on).
+
+**Charging:** USB charges the battery through the nice!nano's charger (about 100 mA, so roughly 1–1.5 h for a
+301230 cell; it stops by itself when full).
+- Switch **on**: the battery is wired straight to the nano and charges to 100 %.
+- Switch **off** (boards from 2026-11-23 on): in the off position the switch connects the nano to IC1, an
+  LTC4411 ideal diode, which charges the battery through a regulated ~28 mV drop (to about 4.17 V, ~97 %) and
+  blocks the battery from the nano once USB is unplugged, so off still means off.
+- **Older boards (no IC1/C1 pads):** charging only works with the switch on. Optional bodge: a SOD-123 Schottky
+  (e.g. B5819W) from the switch's free pin (pad 3, anode) to its battery pin (pad 1, cathode/band). That charges
+  with the switch off too, but only to about 4.0 V (~85 %) because of the diode drop.
 
 **Keymap:** the top row is Esc, Tab, Backspace, Fn; below it a standard numpad. Hold **Fn** (top right) for:
 Esc = bootloader (re-flash without the paperclip), Tab = reboot, NumLock = clear the current Bluetooth
