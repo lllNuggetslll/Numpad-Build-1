@@ -550,8 +550,7 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   Not `EXPERIMENTAL_SEC`: it implies passkey entry (re-pair everything, type a code). Plan B: try the MediaTek radio.
   Note: waking from ZMK deep sleep is a reboot too, so the bug also hit after the 30-min sleep.
 - **Build on GitHub** (user's choice). Local Docker build was abandoned 2026-11-20: Docker Desktop 4.76 crashes at
-  start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Docker
-un\dockerInference`,
+  start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Docker\run\dockerInference`,
   `%LOCALAPPDATA%\docker-secrets-engine\engine.sock`) that Windows refuses to delete (del/.NET/fsutil all fail with
   error 1920); every forced quit leaves new ones. Renaming the parent folder gets past it once; the `*.stale-*`
   folders next to them can be deleted after a reboot. A local build would use `zmkfirmware/zmk-build-arm:3.5`.
