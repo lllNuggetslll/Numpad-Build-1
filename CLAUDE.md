@@ -542,6 +542,13 @@ Ergogen emits cases as **JSCAD v1** files (`output_*/cases/*.jscad`), geometry i
   dir, so a nested config path (e.g. `firmware/config`) puts zmk in the wrong folder.
 - Pins are the Pro Micro D-numbers the ceoloide footprint labels them with: `&pro_micro 19` = P19 etc.
   Matrix transform rows 0..5 = R1 (top, controller end) .. R6; cols 0..3 = C1..C4. Missing RC: (3,3), (5,1), (5,3).
+- **Windows reconnect loop (2026-11-25):** after every power cycle Windows flipped "Connected"/"Driver error" (HID
+  service code 10) until remove + re-pair. Host: a **Barrot BT 5.4 USB dongle** (VID 33FA; the built-in MediaTek
+  RZ616 is disabled, problem 22). The dongle logs "can't store link keys", "no hardware LE advertisement filtering",
+  occasional command timeouts. `lp_numpad.conf` got `CONFIG_BT_GATT_ENFORCE_SUBSCRIPTION=n` (ZMK docs: workaround for
+  a Windows battery-notification bug) + `CONFIG_ZMK_BLE_EXPERIMENTAL_CONN=y` (v0.3: only `BT_CTLR_PHY_2M=n`).
+  Not `EXPERIMENTAL_SEC`: it implies passkey entry (re-pair everything, type a code). Plan B: try the MediaTek radio.
+  Note: waking from ZMK deep sleep is a reboot too, so the bug also hit after the 30-min sleep.
 - **Build on GitHub** (user's choice). Local Docker build was abandoned 2026-11-20: Docker Desktop 4.76 crashes at
   start on stale AF_UNIX socket files (`%LOCALAPPDATA%\Docker
 un\dockerInference`,
